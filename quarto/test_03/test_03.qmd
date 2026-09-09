@@ -1,0 +1,176 @@
+---
+title: "SoC Validation Test Report"
+author: "Nenad Samardzic"
+date: today
+format: docx
+execute:
+  echo: false
+---
+
+# Executive Summary
+
+The following report demonstrates various table formats commonly used in semiconductor validation, silicon bring-up, system integration, and qualification reports.
+
+## Overall Test Summary
+
+| Category | Total | Passed | Failed | Pass Rate |
+|----------|--------|---------|---------|-----------|
+| Functional | 5 | 4 | 1 | 80% |
+| Interface | 5 | 5 | 0 | 100% |
+| Memory | 5 | 5 | 0 | 100% |
+| GPIO | 5 | 4 | 1 | 80% |
+| Analog | 5 | 4 | 1 | 80% |
+| Performance | 5 | 4 | 1 | 80% |
+
+# 1. Standard Functional Test Table
+
+## Reset and Boot Validation
+
+| TC ID | Test Name | Requirement | Result | Status |
+|-------|------------|------------|---------|---------|
+| TC-001 | Power-On Reset | SYS-001 | Pass | ✅ |
+| TC-002 | Warm Reset | SYS-002 | Pass | ✅ |
+| TC-003 | Brown-Out Recovery | SYS-003 | Pass | ✅ |
+| TC-004 | Boot ROM Execution | SYS-004 | Fail | ❌ |
+| TC-005 | Boot Time Measurement | SYS-005 | Pass | ✅ |
+
+: Functional verification results
+
+# 2. Aligned Interface Validation Table
+
+## UART Interface Tests
+
+| TC ID | Description | Duration (s) | Coverage |
+|:------|:------------|-------------:|----------:|
+| TC-101 | UART Loopback | 12 | 100% |
+| TC-102 | UART Framing Error | 8 | 95% |
+| TC-103 | UART Baud Rate Switch | 15 | 100% |
+| TC-104 | UART Stress Test | 30 | 100% |
+| TC-105 | UART Parity Check | 9 | 100% |
+
+: UART validation summary
+
+# 3. Bootstrap Styled Table
+
+## DDR Controller Validation
+
+| TC ID | Scenario | Expected Result | Actual Result | Status |
+|--------|----------|----------------|---------------|---------|
+| TC-201 | DDR Initialization | Controller Ready | Controller Ready | PASS |
+| TC-202 | DDR Sequential Read | Correct Data | Correct Data | PASS |
+| TC-203 | DDR Sequential Write | Correct Data | Correct Data | PASS |
+| TC-204 | DDR Refresh Cycle | No Data Loss | No Data Loss | PASS |
+| TC-205 | DDR ECC Validation | Error Corrected | Error Corrected | PASS |
+
+{: .table .table-striped .table-hover}
+
+: Memory subsystem validation
+
+# 4. HTML Colored Status Table
+
+## GPIO Validation
+
+<table class="table table-bordered">
+<thead>
+<tr>
+<th>TC ID</th>
+<th>Test Description</th>
+<th>Status</th>
+<th>Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TC-301</td>
+<td>GPIO Input Read</td>
+<td style="background-color:#d4edda;">PASS</td>
+<td>Nominal operation</td>
+</tr>
+<tr>
+<td>TC-302</td>
+<td>GPIO Output Drive</td>
+<td style="background-color:#d4edda;">PASS</td>
+<td>Passed all vectors</td>
+</tr>
+<tr>
+<td>TC-303</td>
+<td>Interrupt Generation</td>
+<td style="background-color:#fff3cd;">WARN</td>
+<td>Tight timing margin</td>
+</tr>
+<tr>
+<td>TC-304</td>
+<td>Pull-Up Verification</td>
+<td style="background-color:#d4edda;">PASS</td>
+<td>Pass</td>
+</tr>
+<tr>
+<td>TC-305</td>
+<td>Pull-Down Verification</td>
+<td style="background-color:#f8d7da;">FAIL</td>
+<td>Leakage observed</td>
+</tr>
+</tbody>
+</table>
+
+: GPIO validation results
+
+# 5. Detailed Characterization Table
+
+## ADC Characterization
+
+| TC ID | Module | Description | Requirement | Priority | Status |
+|-------|---------|-------------|-------------|----------|---------|
+| TC-401 | ADC | Offset Error Measurement | ADC-001 | High | Pass |
+| TC-402 | ADC | Gain Error Measurement | ADC-002 | High | Pass |
+| TC-403 | ADC | INL Verification | ADC-003 | Medium | Pass |
+| TC-404 | ADC | DNL Verification | ADC-004 | High | Fail |
+| TC-405 | ADC | Sampling Rate Validation | ADC-005 | Medium | Pass |
+
+: Analog characterization results
+
+# 6. Engineering Matrix Style Table
+
+## Performance Corner Testing
+
+| Test Case | Configuration | Measured Value | Limit | Verdict |
+|------------|--------------|---------------|-------|----------|
+| TC-501 | VDD=1.2V<br>25°C | 148 MHz | >145 MHz | PASS |
+| TC-502 | VDD=1.2V<br>85°C | 142 MHz | >140 MHz | PASS |
+| TC-503 | VDD=1.1V<br>25°C | 139 MHz | >140 MHz | FAIL |
+| TC-504 | VDD=1.3V<br>-40°C | 161 MHz | >145 MHz | PASS |
+| TC-505 | VDD=1.2V<br>125°C | 137 MHz | >135 MHz | PASS |
+
+: PVT corner validation
+
+# Additional Example: Test Execution Dashboard
+
+## Compact KPI Table
+
+| Metric | Value |
+|---------|--------|
+| Executed Tests | 30 |
+| Passed Tests | 27 |
+| Failed Tests | 3 |
+| Pass Rate | 90% |
+| Coverage | 98.5% |
+
+# Conclusion
+
+The report demonstrates:
+
+- Standard markdown tables
+- Aligned numeric tables
+- Bootstrap striped tables
+- HTML colored status tables
+- Detailed characterization tables
+- Engineering matrix style tables
+
+These layouts are commonly used for:
+
+- Silicon bring-up reports
+- IP validation reports
+- Qualification reports
+- Design verification summaries
+- Production test reports
+- Semiconductor characterization documents

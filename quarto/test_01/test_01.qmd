@@ -1,0 +1,45 @@
+---
+title: "SoC Memory Architecture Analysis"
+subtitle: "Performance and Power Considerations"
+author: "Nenad Samardzic"
+date: today
+format: docx
+---
+
+# Introduction
+
+Modern System-on-Chips (SoCs) integrate multiple processing subsystems, memory hierarchies, and accelerators onto a single die.
+
+::: {.callout-note}
+This report demonstrates common Quarto features including code execution, cross references, figures, tables, and mathematical notation.
+:::
+
+# Memory Hierarchy
+
+The memory hierarchy typically consists of:
+
+1. Registers
+2. L1 Cache
+3. L2 Cache
+4. L3 Cache (optional)
+5. SRAM
+6. LPDDR Memory
+7. Storage
+
+## Latency Comparison
+
+| Memory Type | Typical Latency |
+|-------------|----------------|
+| Registers | <1 ns |
+| L1 Cache | 1-2 ns |
+| L2 Cache | 3-10 ns |
+| SRAM | 5-20 ns |
+| LPDDR5 | 50-100 ns |
+
+: Typical memory latency values
+
+# Mathematical Model
+
+Cache hit ratio:
+
+$$
