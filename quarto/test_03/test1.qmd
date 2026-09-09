@@ -1,0 +1,484 @@
+---
+title: "SoC Validation & QA Test Report"
+subtitle: "Functional, Regression and Performance Test Campaign"
+author:
+  - name: "QA Automation Team"
+    email: "qa@example.com"
+date: today
+date-format: "yyyy-MM-dd"
+lang: en
+toc: true
+toc-depth: 3
+number-sections: true
+colorlinks: true
+format:
+    pdf:
+        documentclass: scrreprt
+        toc: true
+        number-sections: false
+        tbl-colwidths: [40, 20, 40]
+
+---
+
+# 1. Executive Summary
+
+## 1.1 Test Campaign
+
+This report summarizes the results of the **SoC Functional and Regression
+Test Campaign**.
+
+The campaign covered:
+
+- Register-level functional testing
+- Peripheral testing
+- Interrupt testing
+- Communication interfaces
+- Power-management behavior
+- Error handling
+- Regression testing
+- Basic performance measurements
+
+## 1.2 Overall Result
+
+```
+#| echo: false
+
+total_tests = 128
+passed_tests = 117
+failed_tests = 7
+blocked_tests = 4
+
+pass_rate = passed_tests / total_tests * 100
+
+print(f"**Pass rate:** {pass_rate:.1f}%")
+```
+
+**Overall status:** ⚠️ **CONDITIONAL PASS**
+
+The majority of tests passed successfully. However, several failures
+remain open and require investigation before production release.
+
+## 1.3 Key Findings
+
+| Area             | Result | Status    |
+|:-----------------|-------:|:----------|
+| CPU / Core       |   100% | ✅ PASS    |
+| GPIO             |    98% | ✅ PASS    |
+| UART             |    96% | ✅ PASS    |
+| SPI              |    94% | ⚠️ REVIEW |
+| I2C              |    91% | ⚠️ REVIEW |
+| Timers           |   100% | ✅ PASS    |
+| Interrupts       |    97% | ✅ PASS    |
+| Power Management |    88% | ❌ FAIL    |
+
+---
+
+# 2. Test Scope
+
+## 2.1 Objectives
+
+The objectives of this test campaign were:
+
+1. Verify the basic functionality of the SoC.
+2. Validate peripheral interfaces.
+3. Verify interrupt behavior.
+4. Detect regressions introduced by the latest RTL/firmware build.
+5. Measure selected performance characteristics.
+6. Provide evidence for release readiness.
+
+## 2.2 Out of Scope
+
+The following areas were not covered:
+
+- Formal verification
+- Full analog validation
+- Production yield analysis
+- Long-term reliability testing
+- Electromagnetic compatibility testing
+
+---
+
+# 3. Test Environment
+
+## 3.1 Hardware
+
+| Component      | Configuration      |
+|:---------------|:-------------------|
+| SoC            | ABC123 Rev.B       |
+| Board          | EVK-02             |
+| CPU            | ARM Cortex-M class |
+| Clock          | 100 MHz            |
+| Supply         | 3.3 V              |
+| Temperature    | 25 °C              |
+| Debugger       | J-Link             |
+| Logic Analyzer | Saleae-class       |
+
+
+## 3.2 Software
+
+| Component | Version                     |
+|:----------|:----------------------------|
+| Firmware  | FW-2.7.3                    |
+| RTL       | `soc_main` commit `a81f23c` |
+| Python    | 3.12                        |
+| pytest    | 8.x                         |
+| Quarto    | 1.x                         |
+| OS        | macOS / Linux               |
+
+
+
+# 4. Test Architecture
+
+The automation environment follows the architecture below.
+
+```{mermaid}
+flowchart LR
+
+    A[Test Specification] --> B[pytest]
+    B --> C[Test Driver]
+
+    C --> D[Debug Interface]
+    C --> E[UART]
+    C --> F[SPI]
+    C --> G[I2C]
+
+    D --> H[SoC DUT]
+    E --> H
+    F --> H
+    G --> H
+
+    H --> I[Test Results]
+    I --> J[JUnit XML]
+    I --> K[Quarto Report]
+```
+
+---
+
+# 5. Test Execution
+
+## 5.1 Test Statistics
+
+Let's generate the test statistics programmatically.
+
+```
+#| label: fig-test-results
+#| fig-cap: "Test execution results"
+
+import matplotlib.pyplot as plt
+
+categories = ["Passed", "Failed", "Blocked"]
+values = [117, 7, 4]
+
+plt.figure(figsize=(8, 4))
+plt.bar(categories, values)
+plt.ylabel("Number of Tests")
+plt.title("Test Execution Results")
+plt.tight_layout()
+plt.show()
+```
+
+The campaign executed **128 tests** in total.
+
+```
+total = 128
+passed = 117
+failed = 7
+blocked = 4
+
+print(f"Total tests:   {total}")
+print(f"Passed:        {passed}")
+print(f"Failed:        {failed}")
+print(f"Blocked:       {blocked}")
+print(f"Pass rate:     {passed / total * 100:.2f}%")
+```
+
+## 5.2 Results by Test Suite
+
+```
+#| label: tbl-suite-results
+#| tbl-cap: "Test results by suite"
+
+import pandas as pd
+
+data = {
+    "Test Suite": [
+        "CPU",
+        "GPIO",
+        "UART",
+        "SPI",
+        "I2C",
+        "Timers",
+        "Interrupts",
+        "Power Management"
+    ],
+    "Total": [12, 15, 18, 17, 16, 14, 18, 18],
+    "Passed": [12, 15, 17, 16, 15, 14, 17, 11],
+    "Failed": [0, 0, 1, 1, 1, 0, 1, 4],
+    "Blocked": [0, 0, 0, 0, 0, 0, 0, 3]
+}
+
+df = pd.DataFrame(data)
+
+df["Pass Rate"] = (
+    df["Passed"] / df["Total"] * 100
+).round(1)
+
+df
+```
+
+As shown in @tbl-suite-results, the largest concentration of failures
+is in the **Power Management** test suite.
+
+---
+
+# 6. Performance Measurements
+
+## 6.1 Interrupt Latency
+
+The following measurements were obtained during the test campaign.
+
+```
+#| label: fig-interrupt-latency
+#| fig-cap: "Measured interrupt latency"
+
+latency_us = [
+    2.1, 2.4, 2.2, 2.3, 2.5,
+    2.0, 2.4, 2.2, 2.6, 2.3,
+    2.1, 2.5, 2.2, 2.4, 2.3
+]
+
+plt.figure(figsize=(8, 4))
+plt.plot(range(1, len(latency_us) + 1), latency_us, marker="o")
+plt.xlabel("Measurement")
+plt.ylabel("Latency (µs)")
+plt.title("Interrupt Latency")
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+Statistical summary:
+
+```
+import statistics
+
+mean_latency = statistics.mean(latency_us)
+min_latency = min(latency_us)
+max_latency = max(latency_us)
+
+print(f"Minimum latency: {min_latency:.2f} µs")
+print(f"Maximum latency: {max_latency:.2f} µs")
+print(f"Mean latency:    {mean_latency:.2f} µs")
+```
+
+---
+
+# 7. Detailed Test Results
+
+## 7.1 Test Case Summary
+
+| ID     | Description    | Expected             | Actual              | Result |
+|:-------|:---------------|:---------------------|:--------------------|:-------|
+| TC-001 | CPU reset      | Correct reset vector | Correct             | PASS   |
+| TC-002 | GPIO output    | Pin toggles          | Pin toggles         | PASS   |
+| TC-003 | UART TX        | Data transmitted     | Data transmitted    | PASS   |
+| TC-004 | UART RX        | Data received        | Data received       | PASS   |
+| TC-005 | SPI transfer   | Correct response     | Incorrect response  | FAIL   |
+| TC-006 | I2C read       | Correct data         | Correct data        | PASS   |
+| TC-007 | Timer overflow | Interrupt generated  | Interrupt generated | PASS   |
+| TC-008 | Sleep mode     | Current decreases    | Current too high    | FAIL   |
+
+## 7.2 Example Detailed Failure
+
+### TC-005 — SPI transfer
+
+**Requirement:** REQ-SPI-014
+
+**Description:** Verify SPI master communication at 10 MHz.
+
+**Expected result:**
+
+The DUT should correctly transmit and receive a 32-bit test pattern.
+
+**Actual result:**
+
+The received value differs from the expected value on approximately
+3% of transfers.
+
+**Reproduction rate:** 3 / 100 transfers
+
+**Severity:** Medium
+
+**Status:** Open
+
+### Initial Investigation
+
+The failure appears to be related to the SPI clock phase configuration.
+
+Further investigation is required to determine whether the problem
+originates from:
+
+- RTL implementation
+- Firmware configuration
+- Board-level signal integrity
+- Test fixture timing
+
+---
+
+# 8. Failure Analysis
+
+## 8.1 Failure Distribution
+
+```
+#| label: fig-failure-distribution
+#| fig-cap: "Failure distribution by category"
+
+failures = {
+    "Firmware": 2,
+    "RTL": 1,
+    "Timing": 2,
+    "Power": 2
+}
+
+plt.figure(figsize=(8, 4))
+plt.bar(failures.keys(), failures.values())
+plt.ylabel("Failures")
+plt.title("Failure Distribution")
+plt.tight_layout()
+plt.show()
+```
+
+## 8.2 Failure Tracking
+
+| ID      | Category  | Severity | Owner    | Status        |
+|:--------|:----------|:---------|:---------|:--------------|
+| BUG-101 | SPI       | Medium   | RTL      | Open          |
+| BUG-102 | Power     | High     | Firmware | Open          |
+| BUG-103 | I2C       | Low      | RTL      | Investigating |
+| BUG-104 | Interrupt | Medium   | Firmware | Fixed         |
+| BUG-105 | Timing    | Medium   | RTL      | Open          |
+
+
+
+# 9. Requirements Traceability
+
+The test campaign provides traceability between requirements and tests.
+
+| Requirement   | Test Cases     | Coverage | Result |
+|:--------------|:---------------|---------:|:-------|
+| REQ-CPU-001   | TC-001         |     100% | PASS   |
+| REQ-GPIO-001  | TC-002         |     100% | PASS   |
+| REQ-UART-001  | TC-003, TC-004 |     100% | PASS   |
+| REQ-SPI-014   | TC-005         |     100% | FAIL   |
+| REQ-I2C-003   | TC-006         |     100% | PASS   |
+| REQ-TIMER-002 | TC-007         |     100% | PASS   |
+| REQ-PWR-005   | TC-008         |     100% | FAIL   |
+
+
+
+# 10. Regression Analysis
+
+Previous release:
+
+```
+previous_pass_rate = 96.2
+current_pass_rate = 91.4
+
+delta = current_pass_rate - previous_pass_rate
+
+print(f"Previous pass rate: {previous_pass_rate:.1f}%")
+print(f"Current pass rate:  {current_pass_rate:.1f}%")
+print(f"Change:             {delta:+.1f} percentage points")
+```
+
+The current campaign shows a reduction in the overall pass rate compared
+with the previous baseline.
+
+The primary contributor is the Power Management suite.
+
+---
+
+# 11. Recommendations
+
+Based on the results, the following actions are recommended:
+
+1. Investigate the SPI timing failure.
+2. Resolve the Power Management failures before release.
+3. Re-run the complete regression suite after RTL changes.
+4. Add additional negative tests for I2C and SPI.
+5. Increase coverage of low-power operating modes.
+6. Add automated comparison against the previous regression baseline.
+
+---
+
+# 12. Release Assessment
+
+## Current Status
+
+**⚠️ CONDITIONAL PASS**
+
+The current build demonstrates acceptable functionality in most tested
+areas, but release should be conditional on resolving the outstanding
+high-severity issues.
+
+### Release Criteria
+
+| Criterion         | Required | Actual | Status |
+|:------------------|---------:|-------:|:-------|
+| Overall pass rate |    ≥ 95% |  91.4% | ❌      |
+| Critical failures |        0 |      0 | ✅      |
+| High failures     |        0 |      2 | ❌      |
+| Medium failures   |      ≤ 5 |      3 | ✅      |
+| Blocked tests     |      ≤ 5 |      4 | ✅      |
+
+
+
+# 13. Appendix
+
+## A. Test Execution Command
+
+The report can be generated using:
+
+```bash
+quarto render test_report.qmd
+```
+
+For HTML output:
+
+```bash
+quarto render test_report.qmd --to html
+```
+
+For PDF output:
+
+```bash
+quarto render test_report.qmd --to pdf
+```
+
+## B. Example pytest Integration
+
+A typical automation pipeline could generate JUnit results:
+
+```bash
+pytest \
+    --junitxml=results.xml \
+    tests/
+```
+
+The resulting XML can then be parsed by Python and injected into this
+Quarto report.
+
+## C. Environment Information
+
+```
+import platform
+import sys
+
+print("Python:", sys.version.split()[0])
+print("Platform:", platform.platform())
+print("Machine:", platform.machine())
+```
+
+---
+
+# End of Report
