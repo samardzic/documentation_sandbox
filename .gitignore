@@ -1,10 +1,10 @@
 
 # Qarto report files
-.html
-*.html
-*.pdf
-*.docx
-*.doc
+# .html
+# *.html
+# *.pdf
+# *.docx
+# *.doc
 
 
 
