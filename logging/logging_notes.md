@@ -33,3 +33,15 @@ Logs delivery:
 - summarize logs with the second part of the team
 - Define logic for marking of exact braking point 
 - auto create test report
+
+Use the following mermaid diagrams:
+- sequence diagrams
+- flow chart TD
+- 
+- class diagram
+
+Code block:
+- for simple code use indentation of 4 spaces
+- for yaml indentation of 2 spaces
+- try to use 
+- use moderate syntax highlighting where possible
