@@ -1,0 +1,260 @@
+---
+title: "Quarto DOCX Examples"
+subtitle: "Tables, Code Blocks, Schemas and Diagrams"
+author: "Example Document"
+format:
+  docx:
+    toc: true
+    number-sections: false
+execute:
+  echo: true
+  warning: false
+  error: false
+---
+
+# Introduction
+
+This document demonstrates several Quarto features that work well when the
+primary output is a Microsoft Word (`.docx`) document.
+
+The examples deliberately avoid Jupyter, Python, and notebook execution.
+Code blocks are rendered as source code rather than executed.
+
+# Tables
+
+## Table 1 — Test Execution Summary
+
+| Test Suite | Tests | Passed | Failed | Pass Rate |
+|:-----------|------:|-------:|-------:|----------:|
+| Smoke | 25 | 24 | 1 | 96% |
+| Regression | 120 | 115 | 5 | 95.8% |
+| Integration | 48 | 46 | 2 | 95.8% |
+| Performance | 12 | 11 | 1 | 91.7% |
+
+: Test execution summary {#tbl-execution}
+
+The table above can be referenced as Table @tbl-execution.
+
+## Table 2 — Configuration Matrix
+
+| Parameter | Development | Test | Production |
+|:----------|:------------|:-----|:-----------|
+| Logging | DEBUG | INFO | WARN |
+| Database | SQLite | PostgreSQL | PostgreSQL |
+| API Endpoint | Local | Test server | Production |
+| Retries | 1 | 3 | 5 |
+
+: Environment configuration matrix {#tbl-config}
+
+# Code Blocks
+
+## Option 1 — Plain Code Block
+
+A simple fenced code block is the most portable option for DOCX output.
+
+```text
+TestExecution
+  ├── Initialize
+  ├── Execute tests
+  ├── Collect results
+  └── Generate report
+```
+
+## Option 2 — Language-Specific Code Block
+
+A language can be specified to enable syntax highlighting.
+
+```bash
+#!/bin/bash
+
+echo "Starting test execution"
+
+./run_tests.sh \
+  --suite regression \
+  --log-level INFO \
+  --output results/
+```
+
+The code is displayed in the document; it is not executed by Quarto.
+
+## Option 3 — Code Block with Caption and Reference
+
+A code block can have a caption and identifier.
+
+```yaml
+test_execution:
+  environment: test
+  suite: regression
+  retries: 3
+  logging:
+    level: INFO
+    output: results/execution.log
+```
+
+: Example test execution configuration {#lst-config}
+
+The configuration shown in Listing @lst-config is suitable for a simple
+execution-control file.
+
+# Schemas and Diagrams
+
+## Example 1 — Mermaid Flowchart
+
+Mermaid can be used for a process flow.
+
+```{mermaid}
+flowchart TD
+    A[Start Test Execution] --> B[Load Configuration]
+    B --> C[Initialize Environment]
+    C --> D[Execute Tests]
+    D --> E[Collect Results]
+    E --> F[Generate Report]
+    F --> G[Finish]
+```
+
+: Test execution flow {#fig-flow}
+
+The flow in Figure @fig-flow illustrates the high-level execution lifecycle.
+
+## Example 2 — Mermaid Sequence Diagram
+
+A sequence diagram is useful for showing interactions between components.
+
+```{mermaid}
+sequenceDiagram
+    participant Runner
+    participant DUT as Device Under Test
+    participant Logger
+    participant Reporter
+
+    Runner->>DUT: Start test
+    DUT-->>Runner: Test result
+    Runner->>Logger: Write execution event
+    Logger-->>Runner: Event stored
+    Runner->>Reporter: Generate report
+    Reporter-->>Runner: Report ready
+```
+
+: Test execution interaction sequence {#fig-sequence}
+
+## Example 3 — Mermaid Entity Relationship Diagram
+
+An ER diagram can describe the logical data model.
+
+```{mermaid}
+erDiagram
+    TEST_RUN ||--o{ TEST_CASE : contains
+    TEST_CASE ||--o{ TEST_RESULT : produces
+    TEST_RUN ||--|| EXECUTION_ENVIRONMENT : uses
+
+    TEST_RUN {
+        string run_id
+        datetime started_at
+        string status
+    }
+
+    TEST_CASE {
+        string test_id
+        string name
+        string suite
+    }
+
+    TEST_RESULT {
+        string result_id
+        string status
+        string log_reference
+    }
+
+    EXECUTION_ENVIRONMENT {
+        string environment_id
+        string name
+        string version
+    }
+```
+
+: Logical test execution data model {#fig-er}
+
+## Example 4 — Mermaid State Diagram
+
+State diagrams are useful when an object or execution moves through
+well-defined states.
+
+```{mermaid}
+stateDiagram-v2
+    [*] --> Created
+    Created --> Queued
+    Queued --> Running
+    Running --> Passed
+    Running --> Failed
+    Running --> Aborted
+    Failed --> Retrying
+    Retrying --> Running
+    Passed --> Completed
+    Aborted --> Completed
+    Completed --> [*]
+```
+
+: Test run state lifecycle {#fig-state}
+
+## Example 5 — Mermaid Class Diagram
+
+A class diagram can document the structure of a test automation model.
+
+```{mermaid}
+classDiagram
+    class TestRun {
+        +String runId
+        +DateTime startedAt
+        +String status
+        +start()
+        +finish()
+    }
+
+    class TestCase {
+        +String testId
+        +String name
+        +execute()
+    }
+
+    class TestResult {
+        +String status
+        +String message
+        +String logPath
+    }
+
+    TestRun "1" --> "*" TestCase : executes
+    TestCase "1" --> "*" TestResult : produces
+```
+
+: Test automation object model {#fig-class}
+
+# DOCX Notes
+
+The examples in this document are intentionally based on features that can
+be processed without Jupyter.
+
+For a DOCX-oriented Quarto project, a typical command is:
+
+```bash
+quarto render examples.qmd --to docx
+```
+
+If Mermaid rendering is unavailable in the local Quarto installation,
+install or enable the Mermaid rendering support appropriate for the Quarto
+version being used.
+
+# Summary
+
+This example contains:
+
+1. Two different table layouts.
+2. Three different code-block approaches.
+3. Five different schema/diagram examples:
+   - Flowchart
+   - Sequence diagram
+   - Entity-relationship diagram
+   - State diagram
+   - Class diagram
+
+The document is designed as a starting point for a larger DOCX-based
+technical document.

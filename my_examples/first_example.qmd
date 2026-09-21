@@ -1,0 +1,19 @@
+---
+title: "Lets try this first example"
+subtitle: "Flower power"
+author: ""
+date: today
+date-format: dd MM yyyy
+format:
+  docx:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    highlight-style: github
+    code-fold: true
+  pdf:
+    
+execute:
+  enabled: false
+editor: source
+---

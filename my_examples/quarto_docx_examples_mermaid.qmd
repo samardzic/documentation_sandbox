@@ -1,0 +1,320 @@
+---
+title: "Quarto DOCX — Tables, Code Blocks, and Mermaid Diagrams"
+subtitle: "DOCX-compatible technical document examples"
+author: "Example"
+format:
+  docx:
+    toc: true
+    number-sections: false
+execute:
+  echo: true
+  warning: false
+  error: false
+---
+
+# Purpose
+
+This document demonstrates Quarto features intended for Microsoft Word
+(`.docx`) output.
+
+It intentionally does **not** use Jupyter, notebooks, or Python execution.
+
+The document contains:
+
+- two different tables;
+- three different code-block approaches;
+- five Mermaid diagrams;
+- Mermaid diagrams configured to render as graphical figures rather than
+  appearing as Mermaid source code in the final document.
+
+# Tables
+
+## Test Execution Summary
+
+| Test Suite | Tests | Passed | Failed | Pass Rate |
+|:-----------|------:|-------:|-------:|----------:|
+| Smoke | 25 | 24 | 1 | 96.0% |
+| Regression | 120 | 115 | 5 | 95.8% |
+| Integration | 48 | 46 | 2 | 95.8% |
+| Performance | 12 | 11 | 1 | 91.7% |
+
+: Test execution summary {#tbl-execution}
+
+Table @tbl-execution shows a typical test execution summary.
+
+## Configuration Matrix
+
+| Parameter | Development | Test | Production |
+|:----------|:------------|:-----|:-----------|
+| Logging | DEBUG | INFO | WARN |
+| Database | SQLite | PostgreSQL | PostgreSQL |
+| Retries | 1 | 3 | 5 |
+| Report Format | HTML | DOCX | DOCX/PDF |
+
+: Environment configuration matrix {#tbl-config}
+
+Table @tbl-config demonstrates a second table layout with multiple
+environment columns.
+
+# Code Blocks
+
+## Option 1 — Plain Text
+
+The simplest option is a normal fenced code block.
+
+```text
+TestExecution
+  |
+  +-- Initialize
+  |
+  +-- Execute tests
+  |
+  +-- Collect results
+  |
+  +-- Generate report
+```
+
+This option requires no syntax highlighting and is highly portable to DOCX.
+
+## Option 2 — Language-Specific Code
+
+A language identifier can be used to provide syntax highlighting.
+
+```bash
+#!/bin/bash
+
+echo "Starting test execution"
+
+./run_tests.sh \
+  --suite regression \
+  --log-level INFO \
+  --output results/
+```
+
+The code is displayed in the document. It is not executed by Quarto.
+
+## Option 3 — Captioned and Referenced Code
+
+A code block can have a caption and identifier.
+
+```yaml
+test_execution:
+  environment: test
+  suite: regression
+  retries: 3
+  logging:
+    level: INFO
+    output: results/execution.log
+```
+
+: Example execution configuration {#lst-config}
+
+Listing @lst-config demonstrates how a code block can be referenced from
+normal document text.
+
+# Mermaid Diagrams
+
+The following diagrams use Quarto's Mermaid integration.
+
+For DOCX output, the diagrams are intended to be rendered as **graphical
+figures** and inserted into the generated Word document.
+
+No Jupyter kernel is required.
+
+## Example 1 — Flowchart
+
+```{mermaid}
+%%| label: fig-execution-flow
+%%| fig-cap: "Test execution flow"
+flowchart TD
+    A[Start Test Execution] --> B[Load Configuration]
+    B --> C[Initialize Environment]
+    C --> D[Execute Tests]
+    D --> E[Collect Results]
+    E --> F[Generate Report]
+    F --> G[Finish]
+```
+
+Figure @fig-execution-flow shows the overall execution flow.
+
+## Example 2 — Sequence Diagram
+
+```{mermaid}
+%%| label: fig-execution-sequence
+%%| fig-cap: "Test execution interaction sequence"
+sequenceDiagram
+    participant Runner
+    participant DUT as Device Under Test
+    participant Logger
+    participant Reporter
+
+    Runner->>DUT: Start test
+    DUT-->>Runner: Test result
+    Runner->>Logger: Write execution event
+    Logger-->>Runner: Event stored
+    Runner->>Reporter: Generate report
+    Reporter-->>Runner: Report ready
+```
+
+Figure @fig-execution-sequence shows the interaction between the test
+runner, device under test, logger, and reporting component.
+
+## Example 3 — Entity Relationship Diagram
+
+```{mermaid}
+%%| label: fig-test-data-model
+%%| fig-cap: "Logical test execution data model"
+erDiagram
+    TEST_RUN ||--o{ TEST_CASE : contains
+    TEST_CASE ||--o{ TEST_RESULT : produces
+    TEST_RUN ||--|| EXECUTION_ENVIRONMENT : uses
+
+    TEST_RUN {
+        string run_id
+        datetime started_at
+        string status
+    }
+
+    TEST_CASE {
+        string test_id
+        string name
+        string suite
+    }
+
+    TEST_RESULT {
+        string result_id
+        string status
+        string log_reference
+    }
+
+    EXECUTION_ENVIRONMENT {
+        string environment_id
+        string name
+        string version
+    }
+```
+
+Figure @fig-test-data-model demonstrates a logical data schema.
+
+## Example 4 — State Diagram
+
+```{mermaid}
+%%| label: fig-test-state
+%%| fig-cap: "Test run state lifecycle"
+stateDiagram-v2
+    [*] --> Created
+    Created --> Queued
+    Queued --> Running
+
+    Running --> Passed
+    Running --> Failed
+    Running --> Aborted
+
+    Failed --> Retrying
+    Retrying --> Running
+
+    Passed --> Completed
+    Aborted --> Completed
+    Completed --> [*]
+```
+
+Figure @fig-test-state shows the lifecycle of an individual test run.
+
+## Example 5 — Class Diagram
+
+```{mermaid}
+%%| label: fig-test-class-model
+%%| fig-cap: "Test automation object model"
+classDiagram
+    class TestRun {
+        +String runId
+        +DateTime startedAt
+        +String status
+        +start()
+        +finish()
+    }
+
+    class TestCase {
+        +String testId
+        +String name
+        +execute()
+    }
+
+    class TestResult {
+        +String status
+        +String message
+        +String logPath
+    }
+
+    TestRun "1" --> "*" TestCase : executes
+    TestCase "1" --> "*" TestResult : produces
+```
+
+Figure @fig-test-class-model documents the main test automation objects and
+their relationships.
+
+# Mermaid and DOCX Rendering
+
+The Mermaid blocks above are not ordinary code blocks. They are Quarto
+diagram blocks:
+
+```text
+```{mermaid}
+...
+```
+```
+
+Quarto processes these diagrams during rendering.
+
+For a DOCX target, the desired result is:
+
+```text
+QMD source
+   |
+   v
+Quarto
+   |
+   +--> Mermaid source
+   |
+   v
+Rendered diagram
+   |
+   v
+Graphical figure
+   |
+   v
+Microsoft Word DOCX
+```
+
+The Mermaid source therefore does not need to be supported natively by
+Microsoft Word.
+
+## Recommended Render Command
+
+Render the document with:
+
+```bash
+quarto render quarto_docx_examples.qmd --to docx
+```
+
+The resulting `.docx` should contain the Mermaid diagrams as graphical
+figures.
+
+# Summary
+
+This document provides a DOCX-oriented example containing:
+
+| Requirement | Included |
+|:------------|:---------|
+| Table 1 | Yes |
+| Table 2 | Yes |
+| Code block option 1 | Plain text |
+| Code block option 2 | Language-specific |
+| Code block option 3 | Captioned/referenced |
+| Mermaid diagram 1 | Flowchart |
+| Mermaid diagram 2 | Sequence diagram |
+| Mermaid diagram 3 | ER diagram |
+| Mermaid diagram 4 | State diagram |
+| Mermaid diagram 5 | Class diagram |
+| Jupyter required | No |
+| Mermaid intended as graphical figure in DOCX | Yes |
