@@ -35,13 +35,20 @@ Logs delivery:
 - auto create test report
 
 Use the following mermaid diagrams:
-- sequence diagrams
+- pie
+- sequenceDiagrams
+- stateDiagrams
+- graph LR
+- graph TB
 - flow chart TD
-- 
+- gitGraph
 - class diagram
+- treeView-beta
 
 Code block:
 - for simple code use indentation of 4 spaces
+- for json indentation of 4 spaces
 - for yaml indentation of 2 spaces
-- try to use 
+- use moderate color scheme in syntax highligting
 - use moderate syntax highlighting where possible
+- all code samples have tipical/standard codeblock grey background

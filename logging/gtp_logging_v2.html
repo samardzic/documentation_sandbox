@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Nenad Samardzic">
+<meta name="dcterms.date" content="2026-09-25">
+
+<title>Test Execution Logging Design</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="gtp_logging_v2_files/libs/clipboard/clipboard.min.js"></script>
+<script src="gtp_logging_v2_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="gtp_logging_v2_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="gtp_logging_v2_files/libs/quarto-html/popper.min.js"></script>
+<script src="gtp_logging_v2_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="gtp_logging_v2_files/libs/quarto-html/anchor.min.js"></script>
+<link href="gtp_logging_v2_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="gtp_logging_v2_files/libs/quarto-html/quarto-syntax-highlighting-bb62276ab45c84d9efd712f51ff97b5a.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="gtp_logging_v2_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="gtp_logging_v2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="gtp_logging_v2_files/libs/bootstrap/bootstrap-f1a1c4c69675416a5956855d0c83e24d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<meta name="mermaid-theme" content="neutral">
+<script src="gtp_logging_v2_files/libs/quarto-diagram/mermaid.min.js"></script>
+<script src="gtp_logging_v2_files/libs/quarto-diagram/mermaid-init.js"></script>
+<link href="gtp_logging_v2_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#purpose" id="toc-purpose" class="nav-link active" data-scroll-target="#purpose"><span class="header-section-number">1</span> Purpose</a></li>
+  <li><a href="#scope" id="toc-scope" class="nav-link" data-scroll-target="#scope"><span class="header-section-number">2</span> Scope</a></li>
+  <li><a href="#design-goals" id="toc-design-goals" class="nav-link" data-scroll-target="#design-goals"><span class="header-section-number">3</span> Design Goals</a>
+  <ul class="collapse">
+  <li><a href="#functional-requirements" id="toc-functional-requirements" class="nav-link" data-scroll-target="#functional-requirements"><span class="header-section-number">3.1</span> Functional Requirements</a></li>
+  </ul></li>
+  <li><a href="#logging-architecture" id="toc-logging-architecture" class="nav-link" data-scroll-target="#logging-architecture"><span class="header-section-number">4</span> Logging Architecture</a></li>
+  <li><a href="#what-should-be-logged" id="toc-what-should-be-logged" class="nav-link" data-scroll-target="#what-should-be-logged"><span class="header-section-number">5</span> What Should Be Logged?</a>
+  <ul class="collapse">
+  <li><a href="#test-framework-logs" id="toc-test-framework-logs" class="nav-link" data-scroll-target="#test-framework-logs"><span class="header-section-number">5.1</span> Test Framework Logs</a></li>
+  <li><a href="#test-action-logs" id="toc-test-action-logs" class="nav-link" data-scroll-target="#test-action-logs"><span class="header-section-number">5.2</span> Test Action Logs</a></li>
+  <li><a href="#soc-interface-logs" id="toc-soc-interface-logs" class="nav-link" data-scroll-target="#soc-interface-logs"><span class="header-section-number">5.3</span> SoC Interface Logs</a>
+  <ul class="collapse">
+  <li><a href="#uart" id="toc-uart" class="nav-link" data-scroll-target="#uart"><span class="header-section-number">5.3.1</span> UART</a></li>
+  <li><a href="#spi" id="toc-spi" class="nav-link" data-scroll-target="#spi"><span class="header-section-number">5.3.2</span> SPI</a></li>
+  <li><a href="#i2c" id="toc-i2c" class="nav-link" data-scroll-target="#i2c"><span class="header-section-number">5.3.3</span> I2C</a></li>
+  <li><a href="#jtagswd" id="toc-jtagswd" class="nav-link" data-scroll-target="#jtagswd"><span class="header-section-number">5.3.4</span> JTAG/SWD</a></li>
+  </ul></li>
+  <li><a href="#firmware-logs" id="toc-firmware-logs" class="nav-link" data-scroll-target="#firmware-logs"><span class="header-section-number">5.4</span> Firmware Logs</a></li>
+  <li><a href="#hardware-and-board-logs" id="toc-hardware-and-board-logs" class="nav-link" data-scroll-target="#hardware-and-board-logs"><span class="header-section-number">5.5</span> Hardware and Board Logs</a></li>
+  <li><a href="#environment-information" id="toc-environment-information" class="nav-link" data-scroll-target="#environment-information"><span class="header-section-number">5.6</span> Environment Information</a></li>
+  </ul></li>
+  <li><a href="#identification-and-correlation" id="toc-identification-and-correlation" class="nav-link" data-scroll-target="#identification-and-correlation"><span class="header-section-number">6</span> Identification and Correlation</a>
+  <ul class="collapse">
+  <li><a href="#execution-id" id="toc-execution-id" class="nav-link" data-scroll-target="#execution-id"><span class="header-section-number">6.1</span> Execution ID</a></li>
+  <li><a href="#test-id" id="toc-test-id" class="nav-link" data-scroll-target="#test-id"><span class="header-section-number">6.2</span> Test ID</a></li>
+  <li><a href="#step-id" id="toc-step-id" class="nav-link" data-scroll-target="#step-id"><span class="header-section-number">6.3</span> Step ID</a></li>
+  <li><a href="#correlation-id" id="toc-correlation-id" class="nav-link" data-scroll-target="#correlation-id"><span class="header-section-number">6.4</span> Correlation ID</a></li>
+  </ul></li>
+  <li><a href="#log-entry-structure" id="toc-log-entry-structure" class="nav-link" data-scroll-target="#log-entry-structure"><span class="header-section-number">7</span> Log Entry Structure</a>
+  <ul class="collapse">
+  <li><a href="#recommended-event-schema" id="toc-recommended-event-schema" class="nav-link" data-scroll-target="#recommended-event-schema"><span class="header-section-number">7.1</span> Recommended Event Schema</a></li>
+  </ul></li>
+  <li><a href="#log-levels" id="toc-log-levels" class="nav-link" data-scroll-target="#log-levels"><span class="header-section-number">8</span> Log Levels</a></li>
+  <li><a href="#raw-and-processed-logs" id="toc-raw-and-processed-logs" class="nav-link" data-scroll-target="#raw-and-processed-logs"><span class="header-section-number">9</span> Raw and Processed Logs</a></li>
+  <li><a href="#storage-architecture" id="toc-storage-architecture" class="nav-link" data-scroll-target="#storage-architecture"><span class="header-section-number">10</span> Storage Architecture</a>
+  <ul class="collapse">
+  <li><a href="#recommended-execution-directory-structure" id="toc-recommended-execution-directory-structure" class="nav-link" data-scroll-target="#recommended-execution-directory-structure"><span class="header-section-number">10.1</span> Recommended Execution Directory Structure</a></li>
+  <li><a href="#long-term-storage" id="toc-long-term-storage" class="nav-link" data-scroll-target="#long-term-storage"><span class="header-section-number">10.2</span> Long-Term Storage</a></li>
+  </ul></li>
+  <li><a href="#database-model" id="toc-database-model" class="nav-link" data-scroll-target="#database-model"><span class="header-section-number">11</span> Database Model</a></li>
+  <li><a href="#failure-classification" id="toc-failure-classification" class="nav-link" data-scroll-target="#failure-classification"><span class="header-section-number">12</span> Failure Classification</a></li>
+  <li><a href="#failure-analysis-pipeline" id="toc-failure-analysis-pipeline" class="nav-link" data-scroll-target="#failure-analysis-pipeline"><span class="header-section-number">13</span> Failure Analysis Pipeline</a></li>
+  <li><a href="#test-step-event-example" id="toc-test-step-event-example" class="nav-link" data-scroll-target="#test-step-event-example"><span class="header-section-number">14</span> Test Step Event Example</a></li>
+  <li><a href="#ci-integration" id="toc-ci-integration" class="nav-link" data-scroll-target="#ci-integration"><span class="header-section-number">15</span> CI Integration</a></li>
+  <li><a href="#reporting" id="toc-reporting" class="nav-link" data-scroll-target="#reporting"><span class="header-section-number">16</span> Reporting</a></li>
+  <li><a href="#retention-policy" id="toc-retention-policy" class="nav-link" data-scroll-target="#retention-policy"><span class="header-section-number">17</span> Retention Policy</a></li>
+  <li><a href="#log-rotation" id="toc-log-rotation" class="nav-link" data-scroll-target="#log-rotation"><span class="header-section-number">18</span> Log Rotation</a></li>
+  <li><a href="#logging-performance" id="toc-logging-performance" class="nav-link" data-scroll-target="#logging-performance"><span class="header-section-number">19</span> Logging Performance</a></li>
+  <li><a href="#security-and-sensitive-data" id="toc-security-and-sensitive-data" class="nav-link" data-scroll-target="#security-and-sensitive-data"><span class="header-section-number">20</span> Security and Sensitive Data</a></li>
+  <li><a href="#configuration" id="toc-configuration" class="nav-link" data-scroll-target="#configuration"><span class="header-section-number">21</span> Configuration</a></li>
+  <li><a href="#recommended-initial-architecture" id="toc-recommended-initial-architecture" class="nav-link" data-scroll-target="#recommended-initial-architecture"><span class="header-section-number">22</span> Recommended Initial Architecture</a></li>
+  <li><a href="#recommended-technology-choices" id="toc-recommended-technology-choices" class="nav-link" data-scroll-target="#recommended-technology-choices"><span class="header-section-number">23</span> Recommended Technology Choices</a></li>
+  <li><a href="#key-design-principles" id="toc-key-design-principles" class="nav-link" data-scroll-target="#key-design-principles"><span class="header-section-number">24</span> Key Design Principles</a>
+  <ul class="collapse">
+  <li><a href="#preserve-raw-evidence" id="toc-preserve-raw-evidence" class="nav-link" data-scroll-target="#preserve-raw-evidence"><span class="header-section-number">24.1</span> Preserve Raw Evidence</a></li>
+  <li><a href="#every-event-must-be-traceable" id="toc-every-event-must-be-traceable" class="nav-link" data-scroll-target="#every-event-must-be-traceable"><span class="header-section-number">24.2</span> Every Event Must Be Traceable</a></li>
+  <li><a href="#test-results-and-logs-are-different" id="toc-test-results-and-logs-are-different" class="nav-link" data-scroll-target="#test-results-and-logs-are-different"><span class="header-section-number">24.3</span> Test Results and Logs Are Different</a></li>
+  <li><a href="#logs-must-support-failure-reconstruction" id="toc-logs-must-support-failure-reconstruction" class="nav-link" data-scroll-target="#logs-must-support-failure-reconstruction"><span class="header-section-number">24.4</span> Logs Must Support Failure Reconstruction</a></li>
+  <li><a href="#logging-must-be-configurable" id="toc-logging-must-be-configurable" class="nav-link" data-scroll-target="#logging-must-be-configurable"><span class="header-section-number">24.5</span> Logging Must Be Configurable</a></li>
+  <li><a href="#logging-must-be-low-overhead" id="toc-logging-must-be-low-overhead" class="nav-link" data-scroll-target="#logging-must-be-low-overhead"><span class="header-section-number">24.6</span> Logging Must Be Low Overhead</a></li>
+  </ul></li>
+  <li><a href="#final-architectural-principle" id="toc-final-architectural-principle" class="nav-link" data-scroll-target="#final-architectural-principle"><span class="header-section-number">25</span> Final Architectural Principle</a></li>
+  <li><a href="#rendering" id="toc-rendering" class="nav-link" data-scroll-target="#rendering"><span class="header-section-number">26</span> Rendering</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="gtp_logging_v2.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="gtp_logging_v2.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Test Execution Logging Design</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Nenad Samardzic </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 25, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="purpose" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Purpose</h1>
+<p>This document defines the architecture, format, collection, storage, processing, analysis, and lifecycle of test execution logs generated during System-on-Chip (SoC) validation.</p>
+<p>The objectives are:</p>
+<ul>
+<li>complete traceability of every test execution;</li>
+<li>a consistent logging mechanism across different test types;</li>
+<li>correlation between test actions and SoC responses;</li>
+<li>preservation of raw diagnostic information;</li>
+<li>machine-readable data for automated analysis;</li>
+<li>human-readable logs for debugging;</li>
+<li>integration with Continuous Integration and Continuous Delivery (CI/CD) and test reports;</li>
+<li>reproducibility of failures;</li>
+<li>long-term historical analysis and regression detection.</li>
+</ul>
+<p>The logging system supports both <strong>interactive/local execution</strong> and <strong>automated CI execution</strong>.</p>
+</section>
+<section id="scope" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Scope</h1>
+<p>The logging architecture covers the complete execution chain.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-execution-chain" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-execution-chain-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-execution-chain">flowchart TD
+  A[Test Specification] --&gt; B[Test Runner: pytest]
+  B --&gt; C[Test Framework]
+  C --&gt; D[UART]
+  C --&gt; E[JTAG or SWD]
+  C --&gt; F[Board Control]
+  D --&gt; G[SoC]
+  E --&gt; G
+  F --&gt; G
+  G --&gt; H[Measurements and Responses]
+  H --&gt; I[Log Collector]
+  I --&gt; J[Raw Logs]
+  I --&gt; K[Structured Events]
+  I --&gt; L[Artifacts]
+  J --&gt; M[Analysis and Reporting]
+  K --&gt; M
+  L --&gt; M
+  M --&gt; N[JUnit]
+  M --&gt; O[HTML, PDF, DOCX]
+  M --&gt; P[Result Database]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-execution-chain-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Complete SoC validation execution and logging chain
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="design-goals" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Design Goals</h1>
+<p>These goals are explicit requirements.</p>
+<section id="functional-requirements" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="functional-requirements"><span class="header-section-number">3.1</span> Functional Requirements</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>ID</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>LOG-001</td>
+<td>Every test execution shall have a unique Execution ID.</td>
+</tr>
+<tr class="even">
+<td>LOG-002</td>
+<td>Every test case shall have a unique Test ID.</td>
+</tr>
+<tr class="odd">
+<td>LOG-003</td>
+<td>All log entries shall be associated with an Execution ID.</td>
+</tr>
+<tr class="even">
+<td>LOG-004</td>
+<td>Logs from different interfaces shall be correlatable.</td>
+</tr>
+<tr class="odd">
+<td>LOG-005</td>
+<td>Raw interface output shall be preserved.</td>
+</tr>
+<tr class="even">
+<td>LOG-006</td>
+<td>Log entries shall contain timestamps.</td>
+</tr>
+<tr class="odd">
+<td>LOG-007</td>
+<td>Test actions shall be logged.</td>
+</tr>
+<tr class="even">
+<td>LOG-008</td>
+<td>Test verdicts shall be logged.</td>
+</tr>
+<tr class="odd">
+<td>LOG-009</td>
+<td>Failures shall contain sufficient diagnostic information.</td>
+</tr>
+<tr class="even">
+<td>LOG-010</td>
+<td>Logs shall be machine-readable.</td>
+</tr>
+<tr class="odd">
+<td>LOG-011</td>
+<td>Logs shall be human-readable.</td>
+</tr>
+<tr class="even">
+<td>LOG-012</td>
+<td>Logs shall be usable outside the CI environment.</td>
+</tr>
+<tr class="odd">
+<td>LOG-013</td>
+<td>Test artifacts shall be associated with the execution.</td>
+</tr>
+<tr class="even">
+<td>LOG-014</td>
+<td>Logging shall have minimal impact on test execution.</td>
+</tr>
+<tr class="odd">
+<td>LOG-015</td>
+<td>Logs shall support long-term historical analysis.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="logging-architecture" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Logging Architecture</h1>
+<p>The logging system is separated into four logical layers.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-logging-layers" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-logging-layers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-logging-layers">flowchart TD
+  A[Test Execution Layer&lt;br/&gt;pytest, test cases, fixtures, assertions] --&gt; B[Automation Layer&lt;br/&gt;actions, drivers, framework events]
+  B --&gt; C[UART Logs]
+  B --&gt; D[JTAG or SWD Logs]
+  B --&gt; E[Board Hardware Logs]
+  C --&gt; F[Log Collection Layer&lt;br/&gt;raw logs, structured events, metadata]
+  D --&gt; F
+  E --&gt; F
+  F --&gt; G[Storage and Analysis Layer&lt;br/&gt;files, database, CI artifacts, reports]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-logging-layers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Logical logging architecture
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>This separation is important because <strong>raw logs and interpreted logs are different data products</strong>.</p>
+</section>
+<section id="what-should-be-logged" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> What Should Be Logged?</h1>
+<p>Logs are divided into well-defined categories.</p>
+<section id="test-framework-logs" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="test-framework-logs"><span class="header-section-number">5.1</span> Test Framework Logs</h2>
+<p>Generated by pytest or the test framework. Typical events are:</p>
+<pre><code>TEST_START
+TEST_STEP
+TEST_PASS
+TEST_FAIL
+TEST_SKIP
+TEST_ERROR
+TEST_END</code></pre>
+<p>Example:</p>
+<pre><code>10:21:15.120 INFO  TEST_START
+10:21:15.124 INFO  test_id=SOC_UART_001
+10:21:15.125 INFO  step="Reset DUT"
+10:21:17.342 INFO  step="Wait for boot"
+10:21:18.002 INFO  step="Send UART command"
+10:21:18.103 INFO  step="Validate response"
+10:21:18.104 INFO  TEST_PASS</code></pre>
+</section>
+<section id="test-action-logs" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="test-action-logs"><span class="header-section-number">5.2</span> Test Action Logs</h2>
+<p>Every significant action performed by the automation framework is logged, including power control, reset, firmware flashing, interface operations, register access, measurements, and debugger operations.</p>
+<pre><code>ACTION
+execution_id=EXE-20260918-001
+test_id=SOC_UART_001
+action=UART_SEND
+interface=UART0
+data="AT+STATUS"</code></pre>
+</section>
+<section id="soc-interface-logs" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="soc-interface-logs"><span class="header-section-number">5.3</span> SoC Interface Logs</h2>
+<section id="uart" class="level3" data-number="5.3.1">
+<h3 data-number="5.3.1" class="anchored" data-anchor-id="uart"><span class="header-section-number">5.3.1</span> UART</h3>
+<p>Recommended fields are <code>timestamp</code>, <code>interface</code>, <code>direction</code>, <code>data</code>, and <code>baudrate</code>.</p>
+<pre><code>12:31:02.120 UART0 TX  "status\r\n"
+12:31:02.145 UART0 RX  "STATUS: READY\r\n"</code></pre>
+</section>
+<section id="spi" class="level3" data-number="5.3.2">
+<h3 data-number="5.3.2" class="anchored" data-anchor-id="spi"><span class="header-section-number">5.3.2</span> SPI</h3>
+<pre><code>SPI0
+TX: 9F 00 00 00
+RX: EF 40 18 00</code></pre>
+</section>
+<section id="i2c" class="level3" data-number="5.3.3">
+<h3 data-number="5.3.3" class="anchored" data-anchor-id="i2c"><span class="header-section-number">5.3.3</span> I2C</h3>
+<pre><code>I2C0
+ADDR=0x50
+WRITE=00 10
+READ=AB CD</code></pre>
+</section>
+<section id="jtagswd" class="level3" data-number="5.3.4">
+<h3 data-number="5.3.4" class="anchored" data-anchor-id="jtagswd"><span class="header-section-number">5.3.4</span> JTAG/SWD</h3>
+<p>Typical events include connect, reset, halt, resume, register read, memory read, and memory write.</p>
+</section>
+</section>
+<section id="firmware-logs" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="firmware-logs"><span class="header-section-number">5.4</span> Firmware Logs</h2>
+<p>Firmware-generated messages are preserved separately from automation logs.</p>
+<pre><code>[BOOT] Starting system
+[CLK] PLL configured
+[MEM] DDR initialization OK
+[UART] Driver initialized
+[APP] Application started</code></pre>
+<p>The source remains explicit:</p>
+<pre><code>source = DUT
+interface = UART0</code></pre>
+<p>Do not merge firmware output into the Python log and discard its origin.</p>
+</section>
+<section id="hardware-and-board-logs" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="hardware-and-board-logs"><span class="header-section-number">5.5</span> Hardware and Board Logs</h2>
+<p>Capture the power-supply state, voltage, current, temperature, reset state, relay state, board-controller messages, power-cycle events, and external instrumentation.</p>
+<pre><code>BOARD_POWER_ON
+voltage=3.30V
+current=142mA
+timestamp=2026-09-18T12:31:00.123Z</code></pre>
+</section>
+<section id="environment-information" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="environment-information"><span class="header-section-number">5.6</span> Environment Information</h2>
+<p>Every execution captures the environment in which the test was executed.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">execution</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">execution_id</span><span class="kw">:</span><span class="at"> EXE-20260918-001</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">timestamp</span><span class="kw">:</span><span class="at"> 2026-09-18T12:30:00Z</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">test</span><span class="kw">:</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">suite</span><span class="kw">:</span><span class="at"> regression</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">test_id</span><span class="kw">:</span><span class="at"> SOC_UART_001</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">test_version</span><span class="kw">:</span><span class="at"> abc1234</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">dut</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">device</span><span class="kw">:</span><span class="at"> XYZ123</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">silicon_revision</span><span class="kw">:</span><span class="at"> B1</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">serial_number</span><span class="kw">:</span><span class="at"> DUT-00017</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">board_revision</span><span class="kw">:</span><span class="at"> REV_C</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">firmware</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="fl">2.4.1</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">git_commit</span><span class="kw">:</span><span class="at"> 8f23ab1</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build_id</span><span class="kw">:</span><span class="at"> BUILD-12345</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">runner</span><span class="kw">:</span><span class="at"> Jenkins</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">runner_id</span><span class="kw">:</span><span class="at"> runner-04</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">python_version</span><span class="kw">:</span><span class="at"> </span><span class="st">"3.12"</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pytest_version</span><span class="kw">:</span><span class="at"> </span><span class="st">"8.x"</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">os</span><span class="kw">:</span><span class="at"> Ubuntu 24.04</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="fu">tools</span><span class="kw">:</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">debugger</span><span class="kw">:</span><span class="at"> J-Link</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">debugger_version</span><span class="kw">:</span><span class="at"> x.x.x</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This information is critical for failure reproduction.</p>
+</section>
+</section>
+<section id="identification-and-correlation" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Identification and Correlation</h1>
+<section id="execution-id" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="execution-id"><span class="header-section-number">6.1</span> Execution ID</h2>
+<p>The <strong>Execution ID</strong> is the primary correlation mechanism. Example:</p>
+<pre><code>EXE-20260918-153045-7F32</code></pre>
+<p>Everything generated during one run references the same Execution ID.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-execution-tree" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-execution-tree-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-execution-tree">graph TB
+  E[Execution] --&gt; T1[Test Case 001]
+  E --&gt; T2[Test Case 002]
+  E --&gt; T3[Test Case 003]
+  T1 --&gt; P1[Python Log]
+  T1 --&gt; U1[UART Log]
+  T1 --&gt; J1[JTAG Log]
+  T1 --&gt; S1[Screenshots]
+  T2 --&gt; P2[Python Log]
+  T2 --&gt; U2[UART Log]
+  T3 --&gt; P3[Python Log]
+  T3 --&gt; U3[UART Log]
+  T3 --&gt; M3[Power Measurements]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-execution-tree-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Execution-level artifact hierarchy
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="test-id" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="test-id"><span class="header-section-number">6.2</span> Test ID</h2>
+<p>Each test has a stable identifier, for example:</p>
+<pre><code>SOC-BOOT-001
+SOC-UART-001
+SOC-SPI-014
+SOC-INT-023
+SOC-PWR-007</code></pre>
+<p>Do not use only the Python function name. Associate a stable logical ID with the test:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="at">@pytest.mark.test_id</span>(<span class="st">"SOC-UART-001"</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_uart_command():</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="step-id" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="step-id"><span class="header-section-number">6.3</span> Step ID</h2>
+<p>Complex tests use explicit step identifiers.</p>
+<pre><code>TEST: SOC-UART-001
+STEP-001  Power on DUT
+STEP-002  Flash firmware
+STEP-003  Reset DUT
+STEP-004  Wait for boot
+STEP-005  Send command
+STEP-006  Validate response
+STEP-007  Power off DUT</code></pre>
+<p>A precise failure record is:</p>
+<pre><code>test_id=SOC-UART-001
+step_id=STEP-005
+status=FAILED</code></pre>
+</section>
+<section id="correlation-id" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="correlation-id"><span class="header-section-number">6.4</span> Correlation ID</h2>
+<p>For complex operations, use an additional <code>correlation_id</code> to group low-level events that belong to one high-level action.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-correlation" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-correlation-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-correlation">sequenceDiagram
+  participant PY as Python Framework
+  participant UART as UART
+  participant DUT as DUT Firmware
+  participant SPI as SPI Peripheral
+  PY-&gt;&gt;UART: Send command [CORR-000123]
+  UART-&gt;&gt;DUT: TX command
+  DUT-&gt;&gt;SPI: Start transaction
+  SPI--&gt;&gt;DUT: Complete transaction
+  DUT--&gt;&gt;UART: Response
+  UART--&gt;&gt;PY: RX response
+  PY-&gt;&gt;PY: Validate response
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-correlation-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Correlation of one high-level operation across log sources
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="log-entry-structure" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Log Entry Structure</h1>
+<p>The canonical machine-readable format is <strong>JSON Lines (JSONL)</strong>. One event corresponds to one JSON object.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"timestamp"</span><span class="fu">:</span> <span class="st">"2026-09-18T12:31:02.120Z"</span><span class="fu">,</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"execution_id"</span><span class="fu">:</span> <span class="st">"EXE-20260918-001"</span><span class="fu">,</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"test_id"</span><span class="fu">:</span> <span class="st">"SOC-UART-001"</span><span class="fu">,</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"source"</span><span class="fu">:</span> <span class="st">"test_framework"</span><span class="fu">,</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"level"</span><span class="fu">:</span> <span class="st">"INFO"</span><span class="fu">,</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"event"</span><span class="fu">:</span> <span class="st">"TEST_START"</span><span class="fu">,</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"message"</span><span class="fu">:</span> <span class="st">"UART test started"</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"timestamp"</span><span class="fu">:</span> <span class="st">"2026-09-18T12:31:05.120Z"</span><span class="fu">,</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"execution_id"</span><span class="fu">:</span> <span class="st">"EXE-20260918-001"</span><span class="fu">,</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"test_id"</span><span class="fu">:</span> <span class="st">"SOC-UART-001"</span><span class="fu">,</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"source"</span><span class="fu">:</span> <span class="st">"uart"</span><span class="fu">,</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"interface"</span><span class="fu">:</span> <span class="st">"UART0"</span><span class="fu">,</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"direction"</span><span class="fu">:</span> <span class="st">"TX"</span><span class="fu">,</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"event"</span><span class="fu">:</span> <span class="st">"DATA"</span><span class="fu">,</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"data"</span><span class="fu">:</span> <span class="st">"status</span><span class="ch">\\</span><span class="st">r</span><span class="ch">\\</span><span class="st">n"</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="recommended-event-schema" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="recommended-event-schema"><span class="header-section-number">7.1</span> Recommended Event Schema</h2>
+<p>Mandatory fields:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>timestamp</code></td>
+<td>Event timestamp in Coordinated Universal Time (UTC).</td>
+</tr>
+<tr class="even">
+<td><code>execution_id</code></td>
+<td>Unique execution identifier.</td>
+</tr>
+<tr class="odd">
+<td><code>source</code></td>
+<td>Component that generated the event.</td>
+</tr>
+<tr class="even">
+<td><code>level</code></td>
+<td>Event severity.</td>
+</tr>
+<tr class="odd">
+<td><code>event</code></td>
+<td>Event type.</td>
+</tr>
+</tbody>
+</table>
+<p>Contextual fields:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>test_id</code></td>
+<td>Test-case identifier.</td>
+</tr>
+<tr class="even">
+<td><code>step_id</code></td>
+<td>Test-step identifier.</td>
+</tr>
+<tr class="odd">
+<td><code>correlation_id</code></td>
+<td>Operation correlation identifier.</td>
+</tr>
+<tr class="even">
+<td><code>interface</code></td>
+<td>DUT interface.</td>
+</tr>
+<tr class="odd">
+<td><code>dut_id</code></td>
+<td>DUT identifier.</td>
+</tr>
+<tr class="even">
+<td><code>board_id</code></td>
+<td>Board identifier.</td>
+</tr>
+<tr class="odd">
+<td><code>message</code></td>
+<td>Human-readable description.</td>
+</tr>
+<tr class="even">
+<td><code>data</code></td>
+<td>Raw or structured event data.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="log-levels" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Log Levels</h1>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Level</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>TRACE</td>
+<td>Extremely detailed diagnostic information.</td>
+</tr>
+<tr class="even">
+<td>DEBUG</td>
+<td>Developer and debugging information.</td>
+</tr>
+<tr class="odd">
+<td>INFO</td>
+<td>Normal execution information.</td>
+</tr>
+<tr class="even">
+<td>WARNING</td>
+<td>Unexpected but non-fatal condition.</td>
+</tr>
+<tr class="odd">
+<td>ERROR</td>
+<td>Test or framework error.</td>
+</tr>
+<tr class="even">
+<td>CRITICAL</td>
+<td>Infrastructure or system failure.</td>
+</tr>
+</tbody>
+</table>
+<pre><code>INFO     Flashing firmware
+INFO     Firmware flash completed
+DEBUG    Waiting for boot message
+INFO     DUT boot completed
+WARNING  Boot took longer than expected
+ERROR    UART response timeout</code></pre>
+</section>
+<section id="raw-and-processed-logs" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Raw and Processed Logs</h1>
+<blockquote class="blockquote">
+<p><strong>Architectural rule:</strong> Never destroy the raw evidence.</p>
+</blockquote>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-raw-processed" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-raw-processed-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-raw-processed">flowchart TD
+  A[UART Hardware] --&gt;|Raw byte stream| B[Raw Log Store]
+  B --&gt;|Parser| C[Structured Events]
+  C --&gt;|Analysis engine| D[Test Result and Report]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-raw-processed-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Raw-to-processed logging flow
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>If the parser has a defect, raw logs can be reprocessed. If only parsed output is stored, the original evidence is lost.</p>
+</section>
+<section id="storage-architecture" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Storage Architecture</h1>
+<p>For the initial implementation, a filesystem-based artifact structure is sufficient. A centralized logging platform is introduced only when log volume and search requirements justify it.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-storage" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-storage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-storage">flowchart TD
+  A[CI Runner] --&gt; B[Execution Directory]
+  B --&gt; C[raw_logs]
+  B --&gt; D[events]
+  B --&gt; E[artifacts]
+  C --&gt; C1[UART.log]
+  C --&gt; C2[JTAG.log]
+  C --&gt; C3[DUT.log]
+  D --&gt; D1[events.jsonl]
+  D --&gt; D2[results.json]
+  E --&gt; E1[firmware.bin]
+  E --&gt; E2[dump.bin]
+  E --&gt; E3[trace.csv]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-storage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Initial CI storage architecture
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<section id="recommended-execution-directory-structure" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="recommended-execution-directory-structure"><span class="header-section-number">10.1</span> Recommended Execution Directory Structure</h2>
+<pre class="text"><code>EXE-20260918-001/
+├── execution.json
+├── metadata.json
+├── result.json
+├── logs/
+│   ├── framework/framework.log
+│   ├── dut/uart0.log
+│   ├── dut/uart1.log
+│   ├── debug/jtag.log
+│   └── board/board-controller.log
+├── events/events.jsonl
+├── measurements/
+│   ├── power.csv
+│   ├── temperature.csv
+│   └── performance.csv
+├── dumps/
+│   ├── memory.bin
+│   └── registers.json
+├── reports/
+│   ├── junit.xml
+│   └── report.html
+└── artifacts/firmware.bin</code></pre>
+</section>
+<section id="long-term-storage" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="long-term-storage"><span class="header-section-number">10.2</span> Long-Term Storage</h2>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-long-term-storage" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-long-term-storage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-long-term-storage">graph LR
+  A[Execution] --&gt; B[Artifact Storage]
+  A --&gt; C[Result Database]
+  B --&gt; B1[Raw Logs and Files]
+  B --&gt; B2[Dumps]
+  B --&gt; B3[Measurements]
+  C --&gt; C1[Test Results]
+  C --&gt; C2[Metadata]
+  C --&gt; C3[Statistics]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-long-term-storage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: Separation of large artifacts and searchable metadata
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Large raw UART and JTAG logs normally remain in artifact storage rather than being stored directly in a relational database.</p>
+</section>
+</section>
+<section id="database-model" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> Database Model</h1>
+<p>A simple relational model can be used initially.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-database-model" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-database-model-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-database-model">classDiagram
+  class EXECUTION {
+    +string execution_id PK
+    +datetime start_time
+    +datetime end_time
+    +string status
+    +string runner
+    +string branch
+    +string commit
+    +string firmware
+    +string dut_id FK
+  }
+  class TEST_EXECUTION {
+    +string test_execution_id PK
+    +string execution_id FK
+    +string test_id
+    +string status
+    +float duration
+    +string failure_category
+    +string log_location
+  }
+  class DUT {
+    +string dut_id PK
+    +string device
+    +string serial_number
+    +string silicon_revision
+    +string board_revision
+  }
+  class ARTIFACT {
+    +string artifact_id PK
+    +string execution_id FK
+    +string type
+    +string path
+    +integer size
+    +string checksum
+  }
+  class EVENT {
+    +string event_id PK
+    +string execution_id FK
+    +string test_execution_id FK
+    +datetime timestamp
+    +string source
+    +string event_type
+    +string severity
+    +json payload
+  }
+  EXECUTION "1" --&gt; "many" TEST_EXECUTION
+  DUT "1" --&gt; "many" EXECUTION
+  EXECUTION "1" --&gt; "many" ARTIFACT
+  EXECUTION "1" --&gt; "many" EVENT
+  TEST_EXECUTION "1" --&gt; "many" EVENT
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-database-model-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Proposed logging database model
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="failure-classification" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> Failure Classification</h1>
+<p>Results contain more than a simple PASS or FAIL verdict.</p>
+<pre><code>TEST_FAILURE
+ASSERTION_FAILURE
+TIMEOUT
+UART_FAILURE
+JTAG_FAILURE
+FLASH_FAILURE
+BOOT_FAILURE
+DUT_CRASH
+DUT_HANG
+POWER_FAILURE
+COMMUNICATION_FAILURE
+INFRASTRUCTURE_FAILURE
+ENVIRONMENT_FAILURE
+UNKNOWN</code></pre>
+</section>
+<section id="failure-analysis-pipeline" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> Failure Analysis Pipeline</h1>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-failure-analysis" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-failure-analysis-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-failure-analysis">flowchart TD
+  A[Raw Logs] --&gt; B[Parser]
+  B --&gt; C[Event Normalization]
+  C --&gt; D[Failure Detection]
+  D --&gt; E[Timeout]
+  D --&gt; F[Assertion]
+  D --&gt; G[Boot Failure]
+  D --&gt; H[Crash]
+  D --&gt; I[Communication]
+  D --&gt; J[Infrastructure]
+  E --&gt; K[Failure Summary]
+  F --&gt; K
+  G --&gt; K
+  H --&gt; K
+  I --&gt; K
+  J --&gt; K
+  K --&gt; L[Test Report]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-failure-analysis-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Automated failure-analysis pipeline
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>A failure report includes the test identifier, expected and observed behavior, DUT state, last DUT message, likely failure category, and links to supporting artifacts.</p>
+</section>
+<section id="test-step-event-example" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> Test Step Event Example</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"timestamp"</span><span class="fu">:</span> <span class="st">"2026-09-18T12:31:05.120Z"</span><span class="fu">,</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"execution_id"</span><span class="fu">:</span> <span class="st">"EXE-20260918-001"</span><span class="fu">,</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"test_id"</span><span class="fu">:</span> <span class="st">"SOC-UART-001"</span><span class="fu">,</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"step_id"</span><span class="fu">:</span> <span class="st">"STEP-005"</span><span class="fu">,</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"source"</span><span class="fu">:</span> <span class="st">"test_framework"</span><span class="fu">,</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"level"</span><span class="fu">:</span> <span class="st">"INFO"</span><span class="fu">,</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"event"</span><span class="fu">:</span> <span class="st">"STEP_START"</span><span class="fu">,</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"message"</span><span class="fu">:</span> <span class="st">"Send UART command"</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="ci-integration" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> CI Integration</h1>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ci-pipeline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ci-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ci-pipeline">flowchart TD
+  A[Checkout] --&gt; B[Build Firmware]
+  B --&gt; C[Provision DUT]
+  C --&gt; D[Execute Tests]
+  D --&gt; E[Collect Logs]
+  E --&gt; F[Parse Logs]
+  F --&gt; G[Generate JUnit]
+  G --&gt; H[Generate Test Report]
+  H --&gt; I[Archive Artifacts]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ci-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: CI logging and reporting pipeline
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>JUnit XML is the standard CI test-result interface, while JSONL and raw logs retain the detailed SoC diagnostic information.</p>
+</section>
+<section id="reporting" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> Reporting</h1>
+<p>Execution logging and report generation remain separate concerns.</p>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-reporting" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-reporting-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-reporting">flowchart TD
+  A[Test Execution] --&gt; B[Logging System]
+  B --&gt; C[JUnit]
+  B --&gt; D[JSONL]
+  B --&gt; E[Raw Logs]
+  C --&gt; F[Analyzer]
+  D --&gt; F
+  E --&gt; F
+  F --&gt; G[CI Dashboard]
+  F --&gt; H[Quarto Report]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-reporting-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11: Separation of logging and reporting
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Reports support execution summaries, verdict counts, failure categories, failed-test details, duration, DUT information, firmware and commit information, and links to raw evidence.</p>
+</section>
+<section id="retention-policy" class="level1" data-number="17">
+<h1 data-number="17"><span class="header-section-number">17</span> Retention Policy</h1>
+<p>Example retention values must be confirmed with the project.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Artifact</th>
+<th>Example Retention</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Test-result metadata</td>
+<td>1 to 2 years</td>
+</tr>
+<tr class="even">
+<td>Failed-test logs</td>
+<td>1 year</td>
+</tr>
+<tr class="odd">
+<td>Successful raw logs</td>
+<td>30 to 90 days</td>
+</tr>
+<tr class="even">
+<td>Firmware and build metadata</td>
+<td>1 to 2 years</td>
+</tr>
+<tr class="odd">
+<td>Crash dumps</td>
+<td>1 year</td>
+</tr>
+<tr class="even">
+<td>Regression reports</td>
+<td>1 to 2 years</td>
+</tr>
+<tr class="odd">
+<td>Debug traces</td>
+<td>30 days</td>
+</tr>
+</tbody>
+</table>
+<p>The policy also defines maximum log size, compression, archive format, deletion policy, ownership, and storage limits.</p>
+</section>
+<section id="log-rotation" class="level1" data-number="18">
+<h1 data-number="18"><span class="header-section-number">18</span> Log Rotation</h1>
+<p>Long-running tests can generate large logs. Rotation can be triggered by file size, elapsed time, test execution, or DUT reboot.</p>
+<pre><code>uart.log
+uart.log.001
+uart.log.002
+uart.log.003
+uart.log.current</code></pre>
+<p>Example configurable policy:</p>
+<pre><code>Maximum file size: 100 MB
+Compression: gzip</code></pre>
+</section>
+<section id="logging-performance" class="level1" data-number="19">
+<h1 data-number="19"><span class="header-section-number">19</span> Logging Performance</h1>
+<p>Logging must not materially influence the behavior being tested. Use asynchronous processing, buffering, batching, measurable overhead, and source-specific controls for high-volume logging.</p>
+<pre><code>LOG_LEVEL=ERROR</code></pre>
+<p>may be suitable for a performance-sensitive test, while:</p>
+<pre><code>LOG_LEVEL=TRACE</code></pre>
+<p>may be used during debugging.</p>
+</section>
+<section id="security-and-sensitive-data" class="level1" data-number="20">
+<h1 data-number="20"><span class="header-section-number">20</span> Security and Sensitive Data</h1>
+<p>The logging design defines what may be written to logs. Credentials, tokens, private keys, production secrets, customer information, and proprietary information require protection or masking.</p>
+<pre><code>username=test_user
+password=********
+token=********</code></pre>
+<p>Sensitive information is not written to raw logs unless explicitly required and appropriately protected.</p>
+</section>
+<section id="configuration" class="level1" data-number="21">
+<h1 data-number="21"><span class="header-section-number">21</span> Configuration</h1>
+<p>Logging is configurable without modifying test implementation.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">logging</span><span class="kw">:</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">level</span><span class="kw">:</span><span class="at"> INFO</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">outputs</span><span class="kw">:</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">console</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">file</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">json</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">interfaces</span><span class="kw">:</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">uart</span><span class="kw">:</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">raw</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">jtag</span><span class="kw">:</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rotation</span><span class="kw">:</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">max_size_mb</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">compression</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="recommended-initial-architecture" class="level1" data-number="22">
+<h1 data-number="22"><span class="header-section-number">22</span> Recommended Initial Architecture</h1>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-initial-architecture" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-initial-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-initial-architecture">flowchart TD
+  A[pytest] --&gt; B[Logging Manager]
+  B --&gt; C[Framework Events]
+  B --&gt; D[UART Driver]
+  B --&gt; E[JTAG or SWD Driver]
+  C --&gt; F[Event Collector]
+  D --&gt; F
+  E --&gt; F
+  F --&gt; G[Raw Log Files]
+  F --&gt; H[JSONL]
+  G --&gt; I[Test Analyzer]
+  H --&gt; I
+  I --&gt; J[JUnit]
+  I --&gt; K[JSON Database]
+  I --&gt; L[Quarto]
+  K --&gt; M[Historical Analysis]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-initial-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12: Recommended initial Python and pytest logging architecture
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="recommended-technology-choices" class="level1" data-number="23">
+<h1 data-number="23"><span class="header-section-number">23</span> Recommended Technology Choices</h1>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Initial Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Test framework</td>
+<td>pytest</td>
+</tr>
+<tr class="even">
+<td>Logging API</td>
+<td>Python logging plus custom structured logger</td>
+</tr>
+<tr class="odd">
+<td>Canonical event format</td>
+<td>JSONL</td>
+</tr>
+<tr class="even">
+<td>Raw interface logs</td>
+<td>Plain text or binary, as appropriate</td>
+</tr>
+<tr class="odd">
+<td>Test result</td>
+<td>JUnit XML</td>
+</tr>
+<tr class="even">
+<td>Metadata</td>
+<td>JSON</td>
+</tr>
+<tr class="odd">
+<td>Measurements</td>
+<td>CSV or JSON</td>
+</tr>
+<tr class="even">
+<td>Local storage</td>
+<td>Filesystem</td>
+</tr>
+<tr class="odd">
+<td>CI storage</td>
+<td>Jenkins or GitLab artifacts</td>
+</tr>
+<tr class="even">
+<td>Historical data</td>
+<td>PostgreSQL or SQLite initially</td>
+</tr>
+<tr class="odd">
+<td>Reporting</td>
+<td>Quarto</td>
+</tr>
+<tr class="even">
+<td>Analysis</td>
+<td>Python and pandas</td>
+</tr>
+<tr class="odd">
+<td>Visualization</td>
+<td>Quarto and Plotly</td>
+</tr>
+<tr class="even">
+<td>Compression</td>
+<td>gzip or zstd</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="key-design-principles" class="level1" data-number="24">
+<h1 data-number="24"><span class="header-section-number">24</span> Key Design Principles</h1>
+<section id="preserve-raw-evidence" class="level2" data-number="24.1">
+<h2 data-number="24.1" class="anchored" data-anchor-id="preserve-raw-evidence"><span class="header-section-number">24.1</span> Preserve Raw Evidence</h2>
+<p><strong>Raw evidence shall never be destroyed as a result of log processing.</strong> Raw logs remain available after parsing and analysis.</p>
+</section>
+<section id="every-event-must-be-traceable" class="level2" data-number="24.2">
+<h2 data-number="24.2" class="anchored" data-anchor-id="every-event-must-be-traceable"><span class="header-section-number">24.2</span> Every Event Must Be Traceable</h2>
+<div class="cell" data-out-width="100%" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-traceability" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-traceability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-traceability">graph TB
+  A[Execution] --&gt; B[DUT]
+  A --&gt; C[Test]
+  C --&gt; D[Step]
+  D --&gt; E[Event]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-traceability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13: Required event traceability hierarchy
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="test-results-and-logs-are-different" class="level2" data-number="24.3">
+<h2 data-number="24.3" class="anchored" data-anchor-id="test-results-and-logs-are-different"><span class="header-section-number">24.3</span> Test Results and Logs Are Different</h2>
+<p>A test result answers: <strong>Did the test pass or fail?</strong></p>
+<p>A log answers: <strong>What happened during execution?</strong></p>
+<p>The two are linked but are not the same data product.</p>
+</section>
+<section id="logs-must-support-failure-reconstruction" class="level2" data-number="24.4">
+<h2 data-number="24.4" class="anchored" data-anchor-id="logs-must-support-failure-reconstruction"><span class="header-section-number">24.4</span> Logs Must Support Failure Reconstruction</h2>
+<p>The stored information must allow failure reconstruction without access to the original test-runner session.</p>
+</section>
+<section id="logging-must-be-configurable" class="level2" data-number="24.5">
+<h2 data-number="24.5" class="anchored" data-anchor-id="logging-must-be-configurable"><span class="header-section-number">24.5</span> Logging Must Be Configurable</h2>
+<p>At minimum, support <code>ERROR</code>, <code>WARNING</code>, <code>INFO</code>, <code>DEBUG</code>, and <code>TRACE</code>, together with source-specific configuration.</p>
+</section>
+<section id="logging-must-be-low-overhead" class="level2" data-number="24.6">
+<h2 data-number="24.6" class="anchored" data-anchor-id="logging-must-be-low-overhead"><span class="header-section-number">24.6</span> Logging Must Be Low Overhead</h2>
+<p>Logging must not materially alter timing-sensitive, performance-sensitive, or power-sensitive SoC validation behavior.</p>
+</section>
+</section>
+<section id="final-architectural-principle" class="level1" data-number="25">
+<h1 data-number="25"><span class="header-section-number">25</span> Final Architectural Principle</h1>
+<blockquote class="blockquote">
+<p><strong>A test execution log shall contain sufficient information to reconstruct and diagnose the execution without requiring access to the original test-runner session.</strong></p>
+</blockquote>
+<p>The supporting principle is:</p>
+<blockquote class="blockquote">
+<p><strong>Raw evidence shall be preserved independently from processed and analyzed results.</strong></p>
+</blockquote>
+<p>Together, these principles drive event structure, correlation identifiers, storage, retention, analysis, and reporting.</p>
+</section>
+<section id="rendering" class="level1" data-number="26">
+<h1 data-number="26"><span class="header-section-number">26</span> Rendering</h1>
+<p>Place <code>my_template.docx</code> in the same directory as this <code>.qmd</code> file, then render all configured formats:</p>
+<pre><code>quarto render test_execution_logging.qmd</code></pre>
+<p>Quarto creates HTML, DOCX, and PDF outputs. PDF output requires a supported TeX installation. Mermaid diagrams are authored as Quarto Mermaid cells and are rendered rather than shown as raw diagram text.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
