@@ -115,7 +115,9 @@ stateDiagram-v2
 %%{init:{
   "theme":"dark",
   "flowchart":{
-    "defaultRenderer":"elk"
+    "defaultRenderer":"elk",
+    "curve" : "linear",
+    "padding": 20    
   }
 }}%%
 flowchart TD
