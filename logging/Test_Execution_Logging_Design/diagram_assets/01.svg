@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="365" viewBox="0 0 760 365">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#555"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<path d="M380.0 45 L380.0 60.0 L380.0 60.0 L380.0 75" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 110 L380.0 125.0 L380.0 125.0 L380.0 140" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 175 L380.0 195.0 L130.0 195.0 L130.0 215" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 175 L380.0 195.0 L380.0 195.0 L380.0 215" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 175 L380.0 195.0 L630.0 195.0 L630.0 215" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M130.0 250 L130.0 270.0 L380.0 270.0 L380.0 290" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 250 L380.0 270.0 L380.0 270.0 L380.0 290" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M630.0 250 L630.0 270.0 L380.0 270.0 L380.0 290" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="260" y="10" width="240" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="28" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Test Specification</text>
+<rect x="260" y="75" width="240" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="93" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Test Runner (pytest)</text>
+<rect x="260" y="140" width="240" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="158" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Test Framework</text>
+<rect x="50" y="215" width="160" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="130.0" y="233" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">UART</text>
+<rect x="300" y="215" width="160" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="233" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">JTAG / SWD</text>
+<rect x="550" y="215" width="160" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="630.0" y="233" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Board Control</text>
+<rect x="260" y="290" width="240" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="308" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">SoC</text>
+</svg>

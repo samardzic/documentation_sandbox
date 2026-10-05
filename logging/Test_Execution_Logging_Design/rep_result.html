@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Generated from source specification" />
+  <meta name="dcterms.date" content="2026-10-05" />
+  <title>Test Execution Logging Design</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Test Execution Logging Design</h1>
+<p class="subtitle">Architecture, collection, storage, processing,
+analysis, and lifecycle of SoC validation logs</p>
+<p class="author">Generated from source specification</p>
+<p class="date">2026-10-05</p>
+</header>
+<nav id="TOC" role="doc-toc">
+
+</nav>
+<style>
+pre.sourceCode {
+  background: #f2f2f2;
+  border: 1px solid #d7d7d7;
+  border-radius: 4px;
+  padding: 0.7em 0.9em;
+}
+code {
+  font-size: 0.9em;
+}
+.mermaid {
+  max-width: 100%;
+  font-size: 10px;
+}
+</style>
+<h1 id="test-execution-logging-design">Test Execution Logging
+Design</h1>
+<h1 id="purpose">1. Purpose</h1>
+<p>This document defines the architecture, format, collection, storage,
+processing, analysis, and life-cycle of test execution logs generated
+during SoC validation.</p>
+<p>The objective is to provide:</p>
+<ul>
+<li>complete traceability of every test execution;</li>
+<li>a consistent logging mechanism across different test types;</li>
+<li>correlation between test actions and SoC responses;</li>
+<li>preservation of raw diagnostic information;</li>
+<li>machine-readable data for automated analysis;</li>
+<li>human-readable logs for debugging;</li>
+<li>integration with CI/CD and test reports;</li>
+<li>reproducibility of failures;</li>
+<li>long-term historical analysis and regression detection.</li>
+</ul>
+<p>The logging system should support both:</p>
+<ul>
+<li><strong>interactive/local execution</strong>, and</li>
+<li><strong>automated CI execution</strong>.</li>
+</ul>
+<hr />
+<h1 id="scope">2. Scope</h1>
+<p>The logging architecture should cover the complete execution chain:
+<code>{mermaid} flowchart TD     A["Test Specification"] --&gt; B["Test Runner&lt;br/&gt;(pytest)"]     B --&gt; C["Test Framework"]     C --&gt; D["UART"]     C --&gt; E["JTAG / SWD"]     C --&gt; F["Board Control"]     D --&gt; G["SoC"]     E --&gt; G     F --&gt; G</code></p>
+<p><code>{mermaid} flowchart TD     A["SoC"] --&gt; B["Measurements / Responses"]     B --&gt; C["Log Collector"]     C --&gt; D["Raw Logs"]     C --&gt; E["Structured Events"]     C --&gt; F["Artifacts"]     D --&gt; G["Analysis / Reporting"]     E --&gt; G     F --&gt; G     G --&gt; H["JUnit"]     G --&gt; I["HTML / PDF"]     G --&gt; J["Database"]</code></p>
+<hr />
+<h1 id="design-goals">3. Design Goals</h1>
+<p>These should be treated as explicit requirements.</p>
+<h2 id="functional-requirements">3.1 Functional Requirements</h2>
+<p>-&gt;table&lt;- | ID | Requirement | |:——–|:———————————————————| |
+LOG-001 | Every test execution shall have a unique Execution ID | |
+LOG-002 | Every test case shall have a unique Test ID | | LOG-003 | All
+log entries shall be associated with an Execution ID | | LOG-004 | Logs
+shall support long-term historical analysis | | LOG-005 | Raw interface
+output shall be preserved | | LOG-006 | Log entries shall contain
+timestamps | | LOG-007 | Test actions shall be logged | | LOG-008 | Test
+verdicts shall be logged | | LOG-009 | Failures shall contain sufficient
+diagnostic information | | LOG-010 | Logs shall be machine-readable | |
+LOG-011 | Logs shall be human-readable | | LOG-012 | Logs shall be
+usable outside the CI environment | | LOG-013 | Test artifacts shall be
+associated with the execution | | LOG-014 | Logging shall have minimal
+impact on test execution |</p>
+<h2 id="recommended-event-fields">3.2 Recommended event fields</h2>
+<p>Each machine-readable event should include, where applicable:</p>
+<ul>
+<li>Timestamp</li>
+<li>Log level</li>
+<li>Component</li>
+<li>Action</li>
+<li>Result</li>
+<li>Test ID</li>
+<li>Human-readable message</li>
+<li>Structured context</li>
+</ul>
+<p>Example:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-18T14:25:32.456+02:00&quot;</span><span class="fu">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;elapsed_ms&quot;</span><span class="fu">:</span> <span class="dv">10543</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;level&quot;</span><span class="fu">:</span> <span class="st">&quot;INFO&quot;</span><span class="fu">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;component&quot;</span><span class="fu">:</span> <span class="st">&quot;Keithley2280&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;action&quot;</span><span class="fu">:</span> <span class="st">&quot;set_voltage&quot;</span><span class="fu">,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;parameters&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;channel&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;voltage_v&quot;</span><span class="fu">:</span> <span class="fl">1.8</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;result&quot;</span><span class="fu">:</span> <span class="st">&quot;SUCCESS&quot;</span><span class="fu">,</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;test_id&quot;</span><span class="fu">:</span> <span class="st">&quot;TEST-POWER-004&quot;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h2 id="log-levels">3.3 Log levels</h2>
+<p>Use a clear and consistently enforced definition:</p>
+<pre class="text"><code>TRACE     Very detailed protocol traffic, register access, or SCPI traffic
+DEBUG     Internal state, decisions, variables, and diagnostic context
+INFO      Normal test milestones and successful operations
+WARNING   Unexpected but recoverable condition, fallback, or retry
+ERROR     Operation or step failed, but cleanup or partial continuation is possible
+CRITICAL  Unsafe or unrecoverable condition requiring immediate abort</code></pre>
+<p>Allow log-level configuration globally and per component so noisy
+protocol traces can be enabled selectively.</p>
+<h2 id="result-states">3.4 Result states</h2>
+<p>Result state describes the outcome of an execution, test, step,
+assertion, or operation. -&gt;table&lt;- | Result | Meaning |
+|:——————|:—————————————————————| | PASS | Expected behavior was verified
+without recovery | | PASS_WITH_RETRIES | Final expectation passed after
+one or more failed attempts | | FAIL | Observed behavior did not meet an
+expected result | | ERROR | Framework, equipment, or environment
+prevented valid execution | | SKIP | Execution was intentionally not
+performed | | BLOCKED | A required prerequisite was not satisfied | |
+ABORTED | Execution was intentionally stopped or ended for safety | |
+INCOMPLETE | Execution ended without a reliable final state |</p>
+<p>Keeping <strong>FAIL</strong> separate from <strong>ERROR</strong>
+prevents product failures from being mixed with test-infrastructure
+problems.</p>
+<h2 id="retry-visibility">3.5 Retry visibility</h2>
+<p>Every attempt should be logged. Reporting only the final successful
+attempt can hide instability.</p>
+<p>A retry record should identify:</p>
+<ul>
+<li>operation and related step;</li>
+<li>attempt number and configured limit;</li>
+<li>failure reason;</li>
+<li>delay or recovery action;</li>
+<li>final outcome.</li>
+</ul>
+<p>Retry able conditions should be defined explicitly. Mandatory
+failures should not be silently converted into successful results.</p>
+<h2 id="cleanup-and-safe-state-logging">3.6 Cleanup and Safe-State
+Logging</h2>
+<p>Cleanup should be treated as a formal execution phase rather than an
+unlogged final action.</p>
+<p>Log:</p>
+<ul>
+<li>cleanup start and completion;</li>
+<li>resources released;</li>
+<li>device and equipment target states;</li>
+<li>observed final states;</li>
+<li>verification outcome;</li>
+<li>cleanup errors and emergency fallback actions.</li>
+</ul>
+<hr />
+<h1 id="logging-architecture">4. Logging Architecture</h1>
+<p>The logging system should be separated into four logical layers.
+<code>{mermaid} flowchart TD     A["Test Execution Layer&lt;br/&gt;pytest / test cases / fixtures / assertions"]     --&gt; B["Automation Layer&lt;br/&gt;Test actions / drivers / framework events"]     B --&gt; C["UART Log"]     B --&gt; D["JTAG / SWD Logs"]     B --&gt; E["Board HW Logs"]     C --&gt; F["Log Collection Layer"]     D --&gt; F     E --&gt; F     F --&gt; G["Raw Logs + Structured Events + Metadata"]</code></p>
+<p><code>{mermaid} flowchart TD     A["UART Log"] --&gt; D["Log Collection Layer"]     B["JTAG / SWD Logs"] --&gt; D     C["Board HW Logs"] --&gt; D     D --&gt; E["Storage / Analysis Layer"]     E --&gt; F["Files / DB / CI Artifacts / Reports"]</code></p>
+<p>This separation is important because <strong>raw logs and interpreted
+logs should not be the same thing</strong>.</p>
+<hr />
+<h1 id="what-should-be-logged">5. What Should Be Logged?</h1>
+<p>Logs should be divided into well-defined categories.</p>
+<h2 id="test-framework-logs">5.1 Test Framework Logs</h2>
+<p>Generated by pytest or the test framework.</p>
+<p>Examples:</p>
+<ul>
+<li>TEST_START</li>
+<li>TEST_STEP</li>
+<li>TEST_PASS</li>
+<li>TEST_FAIL</li>
+<li>TEST_SKIP</li>
+<li>TEST_ERROR</li>
+<li>TEST_END</li>
+</ul>
+<p>Example:</p>
+<pre class="text"><code>10:21:15.120 INFO  TEST_START
+10:21:15.124 INFO  test_id=SOC_UART_001
+10:21:15.125 INFO  step=&quot;Reset DUT&quot;
+10:21:17.342 INFO  step=&quot;Wait for boot&quot;
+10:21:18.002 INFO  step=&quot;Send UART command&quot;
+10:21:18.103 INFO  step=&quot;Validate response&quot;
+10:21:18.104 INFO  TEST_PASS</code></pre>
+<hr />
+<h2 id="test-action-logs">5.2 Test Action Logs</h2>
+<p>Every significant action performed by the automation framework should
+be logged.</p>
+<p>Examples:</p>
+<ul>
+<li>Power ON</li>
+<li>Power OFF</li>
+<li>Reset</li>
+<li>Flash firmware</li>
+<li>Open UART</li>
+<li>Close UART</li>
+<li>Send command</li>
+<li>Read response</li>
+<li>Configure peripheral</li>
+<li>Read register</li>
+<li>Write register</li>
+<li>Start measurement</li>
+<li>Stop measurement</li>
+<li>Attach debugger</li>
+<li>Detach debugger</li>
+</ul>
+<p>Example:</p>
+<pre class="text"><code>ACTION
+execution_id=EXE-20260918-001
+test_id=SOC_UART_001
+action=UART_SEND
+interface=UART0
+data=&quot;AT+STATUS&quot;</code></pre>
+<hr />
+<h2 id="soc-interface-logs">5.3 SoC Interface Logs</h2>
+<p>These capture communication with the DUT.</p>
+<h3 id="uart">UART</h3>
+<p>Recommended fields:</p>
+<pre class="text"><code>timestamp
+interface
+direction
+data
+baudrate</code></pre>
+<p>Example:</p>
+<pre class="text"><code>12:31:02.120 UART0 TX  &quot;status&quot;
+12:31:02.145 UART0 RX  &quot;STATUS: READY&quot;</code></pre>
+<h3 id="spi">SPI</h3>
+<p>Example:</p>
+<pre class="text"><code>SPI0
+TX: 9F 00 00 00
+RX: EF 40 18 00</code></pre>
+<h3 id="i2c">I2C</h3>
+<p>Example:</p>
+<pre class="text"><code>I2C0
+ADDR=0x50
+WRITE=00 10
+READ=AB CD</code></pre>
+<h3 id="jtagswd">JTAG/SWD</h3>
+<p>Examples of events:</p>
+<ul>
+<li>connect</li>
+<li>reset</li>
+<li>halt</li>
+<li>resume</li>
+<li>register read</li>
+<li>memory read</li>
+<li>memory write</li>
+</ul>
+<hr />
+<h2 id="firmware-logs">5.4 Firmware Logs</h2>
+<p>Firmware-generated messages should be preserved separately from
+automation logs.</p>
+<p>Example:</p>
+<pre class="text"><code>[BOOT] Starting system
+[CLK] PLL configured
+[MEM] DDR initialization OK
+[UART] Driver initialized
+[APP] Application started</code></pre>
+<p>The source of the message should be retained:</p>
+<pre class="text"><code>source = DUT
+interface = UART0</code></pre>
+<p>Do not simply merge firmware output into the Python log and discard
+its origin.</p>
+<hr />
+<h2 id="hardware-board-logs">5.5 Hardware / Board Logs</h2>
+<p>If the test infrastructure controls the physical board, capture:</p>
+<ul>
+<li>power supply state;</li>
+<li>voltage;</li>
+<li>current;</li>
+<li>temperature;</li>
+<li>reset state;</li>
+<li>relay state;</li>
+<li>board controller messages;</li>
+<li>power-cycle events;</li>
+<li>external instrumentation.</li>
+</ul>
+<p>Example:</p>
+<pre class="text"><code>BOARD_POWER_ON
+voltage=3.30V
+current=142mA
+timestamp=2026-09-18T12:31:00.123Z</code></pre>
+<p>For long-running tests, this information can be extremely
+valuable.</p>
+<hr />
+<h2 id="environment-information">5.6 Environment Information</h2>
+<p>Every execution should capture the environment in which the test was
+executed.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">execution</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">execution_id</span><span class="kw">:</span><span class="at"> EXE-20260918-001</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">timestamp</span><span class="kw">:</span><span class="at"> 2026-09-18T12:30:00Z</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">test</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">suite</span><span class="kw">:</span><span class="at"> regression</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">test_id</span><span class="kw">:</span><span class="at"> SOC_UART_001</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">test_version</span><span class="kw">:</span><span class="at"> abc1234</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">dut</span><span class="kw">:</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">device</span><span class="kw">:</span><span class="at"> XYZ123</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">silicon_revision</span><span class="kw">:</span><span class="at"> B1</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">serial_number</span><span class="kw">:</span><span class="at"> DUT-00017</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">board_revision</span><span class="kw">:</span><span class="at"> REV_C</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="fu">firmware</span><span class="kw">:</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="fl">2.4.1</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">git_commit</span><span class="kw">:</span><span class="at"> 8f23ab1</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build_id</span><span class="kw">:</span><span class="at"> BUILD-12345</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">runner</span><span class="kw">:</span><span class="at"> Jenkins</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">runner_id</span><span class="kw">:</span><span class="at"> runner-04</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">python_version</span><span class="kw">:</span><span class="at"> </span><span class="fl">3.12</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pytest_version</span><span class="kw">:</span><span class="at"> 8.x</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">os</span><span class="kw">:</span><span class="at"> Ubuntu 24.04</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="fu">tools</span><span class="kw">:</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">debugger</span><span class="kw">:</span><span class="at"> J-Link</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">debugger_version</span><span class="kw">:</span><span class="at"> x.x.x</span></span></code></pre></div>
+<p>This information is critical for failure reproduction.</p>
+<p>A failure six months later is almost impossible to reproduce if the
+only information available is:</p>
+<pre class="text"><code>test_uart FAILED</code></pre>
+<hr />
+<h1 id="execution-id">6. Execution ID</h1>
+<p>The system should introduce an <strong>Execution ID as the primary
+correlation mechanism</strong>.</p>
+<p>Example:</p>
+<pre class="text"><code>EXE-20260918-153045-7F32</code></pre>
+<p>Everything generated during that execution should reference it.</p>
+<pre class="text"><code>Execution
+│
+├── Test Case 001
+│   ├── Python log
+│   ├── UART log
+│   ├── JTAG log
+│   └── screenshots
+│
+├── Test Case 002
+│   ├── Python log
+│   └── UART log
+│
+└── Test Case 003
+    ├── Python log
+    ├── UART log
+    └── power measurements</code></pre>
+<p>The Execution ID should remain stable for the entire test run.</p>
+<hr />
+<h1 id="test-id">7. Test ID</h1>
+<p>Each test should have a stable identifier.</p>
+<p>Examples:</p>
+<pre class="text"><code>SOC-BOOT-001
+SOC-UART-001
+SOC-SPI-014
+SOC-INT-023
+SOC-PWR-007</code></pre>
+<p>Avoid using the Python function name as the only identifier.</p>
+<p>For example:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_uart_command():</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div>
+<p>can be renamed.</p>
+<p>Instead, the test should have a stable logical identifier:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="at">@pytest.mark.test_id</span>(<span class="st">&quot;SOC-UART-001&quot;</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_uart_command():</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div>
+<p>The stable Test ID can then be used for historical analysis.</p>
+<hr />
+<h1 id="log-entry-structure">8. Log Entry Structure</h1>
+<p>The canonical machine-readable format should be <strong>JSON Lines
+(JSONL)</strong>.</p>
+<p>One event should correspond to one JSON object.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-18T12:31:02.120Z&quot;</span><span class="fu">,</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;execution_id&quot;</span><span class="fu">:</span> <span class="st">&quot;EXE-20260918-001&quot;</span><span class="fu">,</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;test_id&quot;</span><span class="fu">:</span> <span class="st">&quot;SOC-UART-001&quot;</span><span class="fu">,</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;source&quot;</span><span class="fu">:</span> <span class="st">&quot;test_framework&quot;</span><span class="fu">,</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;level&quot;</span><span class="fu">:</span> <span class="st">&quot;INFO&quot;</span><span class="fu">,</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;event&quot;</span><span class="fu">:</span> <span class="st">&quot;TEST_START&quot;</span><span class="fu">,</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;UART test started&quot;</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Another example:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-18T12:31:05.120Z&quot;</span><span class="fu">,</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;execution_id&quot;</span><span class="fu">:</span> <span class="st">&quot;EXE-20260918-001&quot;</span><span class="fu">,</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;test_id&quot;</span><span class="fu">:</span> <span class="st">&quot;SOC-UART-001&quot;</span><span class="fu">,</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;source&quot;</span><span class="fu">:</span> <span class="st">&quot;uart&quot;</span><span class="fu">,</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;interface&quot;</span><span class="fu">:</span> <span class="st">&quot;UART0&quot;</span><span class="fu">,</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;direction&quot;</span><span class="fu">:</span> <span class="st">&quot;TX&quot;</span><span class="fu">,</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;event&quot;</span><span class="fu">:</span> <span class="st">&quot;DATA&quot;</span><span class="fu">,</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="st">&quot;status</span><span class="ch">\\</span><span class="st">r</span><span class="ch">\\</span><span class="st">n&quot;</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>And:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-18T12:31:05.145Z&quot;</span><span class="fu">,</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;execution_id&quot;</span><span class="fu">:</span> <span class="st">&quot;EXE-20260918-001&quot;</span><span class="fu">,</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;test_id&quot;</span><span class="fu">:</span> <span class="st">&quot;SOC-UART-001&quot;</span><span class="fu">,</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;source&quot;</span><span class="fu">:</span> <span class="st">&quot;uart&quot;</span><span class="fu">,</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;interface&quot;</span><span class="fu">:</span> <span class="st">&quot;UART0&quot;</span><span class="fu">,</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;direction&quot;</span><span class="fu">:</span> <span class="st">&quot;RX&quot;</span><span class="fu">,</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;event&quot;</span><span class="fu">:</span> <span class="st">&quot;DATA&quot;</span><span class="fu">,</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="st">&quot;STATUS: READY</span><span class="ch">\\</span><span class="st">r</span><span class="ch">\\</span><span class="st">n&quot;</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<hr />
+<h1 id="recommended-event-schema">9. Recommended Event Schema</h1>
+<p>A common event schema should be defined for all log sources.</p>
+<p>Recommended mandatory fields: -&gt;table&lt;- | Field | Description |
+|:—————|:———————————–| | <code>timestamp</code> | Event timestamp in UTC
+| | <code>execution_id</code> | Unique execution identifier | |
+<code>source</code> | Component that generated the event | |
+<code>level</code> | Severity | | <code>event</code> | Event type |</p>
+<p>Recommended contextual fields: -&gt;table&lt;- | Field | Description
+| |:—————–|:———————————| | <code>test_id</code> | Test case identifier |
+| <code>interface</code> | DUT interface | | <code>dut_id</code> | DUT
+identifier | | <code>board_id</code> | Board identifier | |
+<code>message</code> | Human-readable description | | <code>data</code>
+| Raw or structured event data |</p>
+<p>Optional fields should be added based on the source.</p>
+<hr />
+<h1 id="log-levels-1">10. Log Levels</h1>
+<p>Log levels should be defined centrally. -&gt;table&lt;- | Level |
+Purpose | |:———|:——————————————| | TRACE | Extremely detailed diagnostic
+information | | DEBUG | Developer/debug information | | INFO | Normal
+execution information | | WARNING | Unexpected but non-fatal condition |
+| ERROR | Test/framework error | | CRITICAL | Infrastructure/system
+failure |</p>
+<p>Example:</p>
+<pre class="text"><code>INFO     Flashing firmware
+INFO     Firmware flash completed
+DEBUG    Waiting for boot message
+INFO     DUT boot completed
+WARNING  Boot took longer than expected
+ERROR    UART response timeout</code></pre>
+<hr />
+<h1 id="storage-architecture">11. Storage Architecture</h1>
+<p>For the initial implementation, a filesystem-based artifact structure
+is sufficient.</p>
+<p>A centralized logging platform such as Elasticsearch/Kibana should
+only be introduced if log volume and search requirements justify it.</p>
+<p>Recommended architecture:
+<code>{mermaid} flowchart TD     A["CI Runner"] --&gt; B["Execution Directory"]     B --&gt; C["raw_logs/"]     B --&gt; D["events/"]     B --&gt; E["artifacts/"]     C --&gt; F["UART.log&lt;br/&gt;JTAG.log&lt;br/&gt;DUT.log"]     D --&gt; G["events.jsonl&lt;br/&gt;results.json"]     E --&gt; H["firmware.bin&lt;br/&gt;dump.bin&lt;br/&gt;trace.csv"]</code></p>
+<p>All files should be associated with the same Execution ID.</p>
+<hr />
+<h1 id="long-term-storage">12. Long-Term Storage</h1>
+<p>The storage architecture should distinguish between large artifacts
+and searchable metadata.
+<code>{mermaid} flowchart TD     A["Execution"] --&gt; B["Artifact Storage"]     A --&gt; C["Result Database"]     B --&gt; D["Raw logs / files&lt;br/&gt;Dumps / Measurements"]     C --&gt; E["Test results&lt;br/&gt;Metadata / Statistics"]</code></p>
+<h2 id="artifact-storage">12.1 Artifact Storage</h2>
+<p>Stores large objects:</p>
+<ul>
+<li>raw UART logs;</li>
+<li>JTAG logs;</li>
+<li>firmware;</li>
+<li>memory dumps;</li>
+<li>traces;</li>
+<li>screenshots;</li>
+<li>power measurements.</li>
+</ul>
+<p>Large raw UART/JTAG logs should generally remain in artifact storage
+rather than being stored directly in a relational database.</p>
+<hr />
+<h1 id="failure-classification">13. Failure Classification</h1>
+<p>Test results should contain more than a simple PASS/FAIL verdict.</p>
+<p>Recommended failure categories:</p>
+<ul>
+<li>TEST_FAILURE</li>
+<li>ASSERTION_FAILURE</li>
+<li>TIMEOUT</li>
+<li>UART_FAILURE</li>
+<li>JTAG_FAILURE</li>
+<li>FLASH_FAILURE</li>
+<li>BOOT_FAILURE</li>
+<li>DUT_CRASH</li>
+<li>DUT_HANG</li>
+<li>POWER_FAILURE</li>
+<li>COMMUNICATION_FAILURE</li>
+<li>INFRASTRUCTURE_FAILURE</li>
+<li>ENVIRONMENT_FAILURE</li>
+<li>UNKNOWN</li>
+</ul>
+<p>Example regression summary:</p>
+<pre class="text"><code>Regression summary
+
+Total:                 2450
+PASS:                  2301
+FAIL:                    91
+INFRA_FAILURE:           32
+TIMEOUT:                 18
+BOOT_FAILURE:            14
+UART_FAILURE:             9
+DUT_CRASH:                7
+OTHER:                   11</code></pre>
+<p>This is significantly more useful than a simple pass/fail count.</p>
+<hr />
+<h1 id="failure-analysis-pipeline">14. Failure Analysis Pipeline</h1>
+<p>The system should contain an automated analysis stage.</p>
+<pre class="text"><code>Raw Logs
+│
+▼
+Parser
+│
+▼
+Failure Detection
+├── Timeout
+├── Assertion
+├── Boot failure
+├── Crash
+├── Communication
+└── Infrastructure
+│
+▼
+Failure Summary
+│
+▼
+Test Report</code></pre>
+<p>Example failure report:</p>
+<pre class="text"><code>TEST FAILED
+
+Test:
+SOC-UART-014
+
+Failure:
+UART response timeout
+
+Expected:
+&quot;READY&quot;
+
+Observed:
+No response
+
+DUT state:
+Boot completed
+
+Last DUT message:
+&quot;Initializing UART driver...&quot;
+
+Likely category:
+DUT / UART initialization
+
+Artifacts:
+UART log
+JTAG log
+Firmware
+Memory dump</code></pre>
+<hr />
+<h1 id="test-steps">15. Test Steps</h1>
+<p>Explicit test steps are recommended for all complex tests.</p>
+<p>Example:</p>
+<pre class="text"><code>TEST: SOC-UART-001
+
+STEP-001  Power on DUT
+STEP-002  Flash firmware
+STEP-003  Reset DUT
+STEP-004  Wait for boot
+STEP-005  Send command
+STEP-006  Validate response
+STEP-007  Power off DUT</code></pre>
+<p>A log entry can therefore look like:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-18T12:31:05.120Z&quot;</span><span class="fu">,</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;execution_id&quot;</span><span class="fu">:</span> <span class="st">&quot;EXE-20260918-001&quot;</span><span class="fu">,</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;test_id&quot;</span><span class="fu">:</span> <span class="st">&quot;SOC-UART-001&quot;</span><span class="fu">,</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;step_id&quot;</span><span class="fu">:</span> <span class="st">&quot;STEP-005&quot;</span><span class="fu">,</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;source&quot;</span><span class="fu">:</span> <span class="st">&quot;test_framework&quot;</span><span class="fu">,</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;level&quot;</span><span class="fu">:</span> <span class="st">&quot;INFO&quot;</span><span class="fu">,</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;event&quot;</span><span class="fu">:</span> <span class="st">&quot;STEP_START&quot;</span><span class="fu">,</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Send UART command&quot;</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<hr />
+<h1 id="retention-policy">16. Retention Policy</h1>
+<p>Retention requirements should be explicitly defined.</p>
+<p>Example: -&gt;table&lt;- | Artifact | Example Retention |
+|:————————|——————:| | Test result metadata | 1–2 years | | Failed test
+logs | 1 year | | Successful raw logs | 30–90 days | | Firmware/build
+metadata | 1–2 years | | Crash dumps | 1 year | | Regression reports |
+1–2 years | | Debug traces | 30 days |</p>
+<p>The exact values should be agreed with the project.</p>
+<p>The retention policy should also define:</p>
+<ul>
+<li>maximum log size;</li>
+<li>compression;</li>
+<li>archive format;</li>
+<li>deletion policy;</li>
+<li>ownership;</li>
+<li>storage limits.</li>
+</ul>
+<hr />
+<h1 id="log-rotation">17. Log Rotation</h1>
+<p>Long-running SoC tests can generate very large logs.</p>
+<p>Log rotation should therefore be supported.</p>
+<p>Example:</p>
+<pre class="text"><code>uart.log
+uart.log.001
+uart.log.002
+uart.log.003
+uart.log.current</code></pre>
+<p>Rotation can be triggered by:</p>
+<ul>
+<li>file size;</li>
+<li>elapsed time;</li>
+<li>test execution;</li>
+<li>DUT reboot.</li>
+</ul>
+<p>Example policy:</p>
+<pre class="text"><code>Maximum file size: 100 MB
+Compression: gzip</code></pre>
+<p>The actual limits should be configurable.</p>
+<hr />
+<h1 id="security-and-sensitive-data">18. Security and Sensitive
+Data</h1>
+<p>The logging system must define what information is permitted in
+logs.</p>
+<p>Potentially sensitive information includes:</p>
+<ul>
+<li>credentials;</li>
+<li>authentication tokens;</li>
+<li>private keys;</li>
+<li>production secrets;</li>
+<li>customer information;</li>
+<li>proprietary information.</li>
+</ul>
+<p>The logger should support masking.</p>
+<p>Example:</p>
+<pre class="text"><code>username=test_user
+password=********
+token=********</code></pre>
+<p>Sensitive information should not be written to raw logs unless
+explicitly required and appropriately protected.</p>
+<hr />
+<h1 id="recommended-initial-architecture">19. Recommended Initial
+Architecture</h1>
+<p>For a Python/pytest-based SoC automation environment, the recommended
+initial architecture is:
+<code>{mermaid} flowchart TD     A["pytest"] --&gt; B["Logging Manager"]     B --&gt; C["Framework Events"]     B --&gt; D["UART Driver"]     B --&gt; E["JTAG / SWD"]     C --&gt; F["Event Collector"]     D --&gt; F     E --&gt; F</code></p>
+<p><code>{mermaid} flowchart TD     A["Event Collector"] --&gt; B["Raw Log Files"]     A --&gt; C["JSONL"]     B --&gt; D["Test Analyzer"]     C --&gt; D     D --&gt; E["JUnit"]     D --&gt; F["JSON DB"]     D --&gt; G["Quarto"]     E --&gt; H["Historical Analysis"]     F --&gt; H     G --&gt; H</code></p>
+<hr />
+<h1 id="key-design-principles">20. Key Design Principles</h1>
+<p>The following principles should be treated as architectural
+decisions.</p>
+<h2 id="preserve-raw-evidence">20.1 Preserve Raw Evidence</h2>
+<blockquote>
+<p><strong>Raw evidence shall never be destroyed as a result of log
+processing.</strong></p>
+</blockquote>
+<p>Raw logs must remain available even after parsing and analysis.</p>
+<hr />
+<h2 id="every-event-must-be-traceable">20.2 Every Event Must Be
+Traceable</h2>
+<p>Every event should be traceable to:</p>
+<pre class="text"><code>Execution
+│
+├── DUT
+│
+└── Test
+    │
+    └── Step
+        │
+        └── Event</code></pre>
+<hr />
+<h2 id="test-results-and-logs-are-different-things">20.3 Test Results
+and Logs Are Different Things</h2>
+<p>A test result answers:</p>
+<blockquote>
+<p>Did the test pass or fail?</p>
+</blockquote>
+<p>A log answers:</p>
+<blockquote>
+<p>What happened during execution?</p>
+</blockquote>
+<p>The two should be linked but not treated as the same data.</p>
+<hr />
+<h2 id="logs-must-support-failure-reconstruction">20.4 Logs Must Support
+Failure Reconstruction</h2>
+<p>The system should provide enough information to reconstruct a failure
+without requiring access to the original test runner session.</p>
+<hr />
+<h2 id="logging-must-be-configurable">20.5 Logging Must Be
+Configurable</h2>
+<p>Different test types have different logging requirements.</p>
+<p>The system should support at least: -&gt;table&lt;- | Level | Meaning
+| |:———|:————————————————————————————| | TRACE | Very detailed protocol
+or diagnostic information | | DEBUG | Internal state and diagnostic
+context | | INFO | Normal milestones and successful operations | |
+WARNING | Unexpected but recoverable condition, fallback, or retry | |
+ERROR | Operation or step failure where cleanup or controlled
+continuation remains possible | | CRITICAL | Unsafe or unrecoverable
+condition requiring immediate termination |</p>
+<p>and source-specific configuration.</p>
+<hr />
+<h2 id="logging-must-be-low-overhead">20.6 Logging Must Be Low
+Overhead</h2>
+<p>Logging must not materially alter the behavior being tested.</p>
+<p>This is particularly important for timing- and performance-sensitive
+SoC validation.</p>
+<hr />
+<h1 id="final-architectural-principle">21. Final Architectural
+Principle</h1>
+<p>The most important principle for the overall design is:</p>
+<blockquote>
+<p><strong>A test execution log shall contain sufficient information to
+reconstruct and diagnose the execution without requiring access to the
+original test runner session.</strong></p>
+</blockquote>
+<p>This leads to the second key principle:</p>
+<blockquote>
+<p><strong>Raw evidence shall be preserved independently from processed
+and analyzed results.</strong></p>
+</blockquote>
+<p>Together, these principles should drive the decisions regarding event
+structure, correlation IDs, storage, retention, analysis, and
+reporting.</p>
+<hr />
+</body>
+</html>

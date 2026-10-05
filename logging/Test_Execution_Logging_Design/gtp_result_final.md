@@ -72,10 +72,10 @@ logs    events
        v
  Analysis / Reporting
        |
- +----------------------+
- |                      |
- v                      v
-HTML/PDF/DOC/XLSX    Storage
+ +-----+-------------+
+ |     |             |
+ v     v             v
+JUnit  HTML/PDF    Database
 ```
 
 
@@ -110,14 +110,14 @@ These should be treated as explicit requirements.
 
 Each machine-readable event should include, where applicable:
 
-Timestamp
-Log level
-Component
-Action
-Result
-Test ID
-Human-readable message
-Structured context
+- Timestamp
+- Log level
+- Component
+- Action
+- Result
+- Test ID
+- Human-readable message
+- Structured context
 
 Example:
 
@@ -143,16 +143,14 @@ Example:
 ## 3.3 Log levels
 
 Use a clear and consistently enforced definition:
-
-| Level    | Description                                                               |
-|:---------|:--------------------------------------------------------------------------|
-| TRACE    | Very detailed protocol traffic, register access, or SCPI traffic          |
-| DEBUG    | Internal state, decisions, variables, and diagnostic context              |
-| INFO     | Normal test milestones and successful operations                          |
-| WARNING  | Unexpected but recoverable condition, fallback, or retry                  |
-| ERROR    | Operation or step failed, but cleanup or partial continuation is possible |
-| CRITICAL | Unsafe or unrecoverable condition requiring immediate abort               |
-
+```text
+TRACE     Very detailed protocol traffic, register access, or SCPI traffic
+DEBUG     Internal state, decisions, variables, and diagnostic context
+INFO      Normal test milestones and successful operations
+WARNING   Unexpected but recoverable condition, fallback, or retry
+ERROR     Operation or step failed, but cleanup or partial continuation is possible
+CRITICAL  Unsafe or unrecoverable condition requiring immediate abort
+```
 
 Allow log-level configuration globally and per component so noisy protocol traces can be enabled selectively.
 
@@ -205,12 +203,13 @@ Log:
 - verification outcome;
 - cleanup errors and emergency fallback actions.
 
+C
 
 ---
 
 # 4. Logging Architecture
 
-The logging system should be separated into five logical layers.
+The logging system should be separated into four logical layers.
 ->mermaid<-
 ```text
 +------------------------------------------------+
@@ -224,6 +223,17 @@ The logging system should be separated into five logical layers.
 |   Test actions / drivers / framework events    |
 +------------------------+-----------------------+
                          |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+     UART log      JTAG/SWD logs   Board HW logs
+          |              |              |
+          +--------------+--------------+
+```
+
+
+->mermaid<-
+```text
           +--------------+--------------+
           |              |              |
           v              v              v
@@ -287,21 +297,21 @@ Every significant action performed by the automation framework should be logged.
 
 Examples:
 
-Power ON
-Power OFF
-Reset
-Flash firmware
-Open UART
-Close UART
-Send command
-Read response
-Configure peripheral
-Read register
-Write register
-Start measurement
-Stop measurement
-Attach debugger
-Detach debugger
+- Power ON
+- Power OFF
+- Reset
+- Flash firmware
+- Open UART
+- Close UART
+- Send command
+- Read response
+- Configure peripheral
+- Read register
+- Write register
+- Start measurement
+- Stop measurement
+- Attach debugger
+- Detach debugger
 
 Example:
 ->code block<-
@@ -403,15 +413,15 @@ Do not simply merge firmware output into the Python log and discard its origin.
 
 If the test infrastructure controls the physical board, capture:
 
-- power supply state;              
-- voltage;                        
-- current;                      
-- temperature;                    
-- reset state;                    
-- relay state;                  
-- board controller messages;    
-- power-cycle events;            
-- external instrumentation.    
+- power supply state;
+- voltage;
+- current;
+- temperature;
+- reset state;
+- relay state;
+- board controller messages;
+- power-cycle events;
+- external instrumentation.
 
 Example:
 ->code block<-
@@ -673,7 +683,7 @@ Recommended architecture:
        +---------------+----------------+
        |               |                |
        v               v                v
-    raw_logs        events           artifacts
+   raw_logs/       events/          artifacts/
        |               |                |
        v               v                v
    UART.log        events.jsonl      firmware.bin
@@ -692,12 +702,10 @@ The storage architecture should distinguish between large artifacts and searchab
 ```text
                  Execution
                      |
-                     v   
           +----------+----------+
           |                     |
           v                     v
-   Artifact Storage       Result Storage
-          |                     |
+   Artifact Storage       Result Database
           |                     |
           v                     v
    Raw logs/files         Test results
@@ -935,12 +943,12 @@ The logging system must define what information is permitted in logs.
 
 Potentially sensitive information includes:
 
-- credentials;                 
-- authentication tokens;           
-- private keys;                     
-- production secrets;               
-- customer information;             
-- proprietary information.         
+- credentials;
+- authentication tokens;
+- private keys;
+- production secrets;
+- customer information;
+- proprietary information.
 
 The logger should support masking.
 

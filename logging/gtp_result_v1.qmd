@@ -120,7 +120,7 @@ The logging system should be separated into four logical layers.
 +------------------------------------------------+
 |              Test Execution Layer              |
 |                                                |
-| pytest / test cases / fixtures / assertions   |
+| pytest / test cases / fixtures / assertions    |
 +------------------------+-----------------------+
                          |
                          v
@@ -442,7 +442,6 @@ For example:
 
 ```python
 def test_uart_command():
-    ...
 ```
 
 can be renamed.

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="405" viewBox="0 0 760 405">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#555"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<path d="M380.0 55 L380.0 70.0 L380.0 70.0 L380.0 85" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 130 L380.0 150.0 L120.0 150.0 L120.0 170" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 130 L380.0 150.0 L380.0 150.0 L380.0 170" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 130 L380.0 150.0 L640.0 150.0 L640.0 170" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M120.0 205 L120.0 225.0 L380.0 225.0 L380.0 245" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 205 L380.0 225.0 L380.0 225.0 L380.0 245" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M640.0 205 L640.0 225.0 L380.0 225.0 L380.0 245" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M380.0 290 L380.0 305.0 L380.0 305.0 L380.0 320" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="270" y="10" width="220" height="45" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="28" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Test Execution Layer</text>
+<rect x="270" y="85" width="220" height="45" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="103" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Automation Layer</text>
+<rect x="40" y="170" width="160" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="120.0" y="188" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">UART Log</text>
+<rect x="300" y="170" width="160" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="188" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">JTAG / SWD Logs</text>
+<rect x="560" y="170" width="160" height="35" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="640.0" y="188" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Board HW Logs</text>
+<rect x="270" y="245" width="220" height="45" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="263" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Log Collection Layer</text>
+<rect x="220" y="320" width="320" height="45" rx="6" fill="#f4f4f4" stroke="#666"/>
+<text x="380.0" y="338" text-anchor="middle" font-family="Arial" font-size="11" fill="#222">Raw Logs + Structured Events + Metadata</text>
+</svg>

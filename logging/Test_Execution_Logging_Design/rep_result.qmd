@@ -1,3 +1,56 @@
+---
+title: "Test Execution Logging Design"
+subtitle: "Architecture, collection, storage, processing, analysis, and lifecycle of SoC validation logs"
+author: "Generated from source specification"
+date: "2026-10-05"
+toc: true
+number-sections: true
+format:
+  html:
+    toc: true
+    code-fold: false
+    css: styles.css
+  docx:
+    reference-doc: my_template.docx
+  pdf:
+    documentclass: article
+    papersize: a4
+    mainfont: "DejaVu Sans"
+    monofont: "DejaVu Sans Mono"
+    geometry:
+      - top=20mm
+      - bottom=20mm
+      - left=18mm
+      - right=18mm
+    colorlinks: true
+execute:
+  echo: true
+  warning: false
+  error: false
+mermaid:
+  theme: neutral
+  flowchart:
+    curve: linear
+    padding: 20
+    htmlLabels: true
+---
+
+<style>
+pre.sourceCode {
+  background: #f2f2f2;
+  border: 1px solid #d7d7d7;
+  border-radius: 4px;
+  padding: 0.7em 0.9em;
+}
+code {
+  font-size: 0.9em;
+}
+.mermaid {
+  max-width: 100%;
+  font-size: 10px;
+}
+</style>
+
 # Test Execution Logging Design
 
 
@@ -29,53 +82,32 @@ The logging system should support both:
 # 2. Scope
 
 The logging architecture should cover the complete execution chain:
-->mermaid<-
-```text
-Test Specification
-       |
-       v
-   Test Runner
-    (pytest)
-       |
-       v
- Test Framework
-       |
- +-----+-----------+
- |     |           |
- v     v           v
-UART  JTAG/SWD   Board Control
- |     |           |
- +-----+-----------+
-       |
-       v
-      SoC
+```{mermaid}
+flowchart TD
+    A["Test Specification"] --> B["Test Runner<br/>(pytest)"]
+    B --> C["Test Framework"]
+    C --> D["UART"]
+    C --> E["JTAG / SWD"]
+    C --> F["Board Control"]
+    D --> G["SoC"]
+    E --> G
+    F --> G
 ```
 
 
-->mermaid<-
-```text
-
-      SoC
-       |
-       v
- Measurements / Responses
-       |
-       v
- Log Collector
-       |
- +-----+-------------+
- |     |             |
- v     v             v
-Raw   Structured   Artifacts
-logs    events
-       |
-       v
- Analysis / Reporting
-       |
- +----------------------+
- |                      |
- v                      v
-HTML/PDF/DOC/XLSX    Storage
+```{mermaid}
+flowchart TD
+    A["SoC"] --> B["Measurements / Responses"]
+    B --> C["Log Collector"]
+    C --> D["Raw Logs"]
+    C --> E["Structured Events"]
+    C --> F["Artifacts"]
+    D --> G["Analysis / Reporting"]
+    E --> G
+    F --> G
+    G --> H["JUnit"]
+    G --> I["HTML / PDF"]
+    G --> J["Database"]
 ```
 
 
@@ -110,18 +142,17 @@ These should be treated as explicit requirements.
 
 Each machine-readable event should include, where applicable:
 
-Timestamp
-Log level
-Component
-Action
-Result
-Test ID
-Human-readable message
-Structured context
+- Timestamp
+- Log level
+- Component
+- Action
+- Result
+- Test ID
+- Human-readable message
+- Structured context
 
 Example:
 
-->code block<-
 ```json
 {
   "timestamp": "2026-09-18T14:25:32.456+02:00",
@@ -143,16 +174,14 @@ Example:
 ## 3.3 Log levels
 
 Use a clear and consistently enforced definition:
-
-| Level    | Description                                                               |
-|:---------|:--------------------------------------------------------------------------|
-| TRACE    | Very detailed protocol traffic, register access, or SCPI traffic          |
-| DEBUG    | Internal state, decisions, variables, and diagnostic context              |
-| INFO     | Normal test milestones and successful operations                          |
-| WARNING  | Unexpected but recoverable condition, fallback, or retry                  |
-| ERROR    | Operation or step failed, but cleanup or partial continuation is possible |
-| CRITICAL | Unsafe or unrecoverable condition requiring immediate abort               |
-
+```text
+TRACE     Very detailed protocol traffic, register access, or SCPI traffic
+DEBUG     Internal state, decisions, variables, and diagnostic context
+INFO      Normal test milestones and successful operations
+WARNING   Unexpected but recoverable condition, fallback, or retry
+ERROR     Operation or step failed, but cleanup or partial continuation is possible
+CRITICAL  Unsafe or unrecoverable condition requiring immediate abort
+```
 
 Allow log-level configuration globally and per component so noisy protocol traces can be enabled selectively.
 
@@ -205,43 +234,32 @@ Log:
 - verification outcome;
 - cleanup errors and emergency fallback actions.
 
-
 ---
 
 # 4. Logging Architecture
 
-The logging system should be separated into five logical layers.
-->mermaid<-
-```text
-+------------------------------------------------+
-|              Test Execution Layer              |
-|  pytest / test cases / fixtures / assertions   |
-+------------------------+-----------------------+
-                         |
-                         v
-+------------------------------------------------+
-|               Automation Layer                 |
-|   Test actions / drivers / framework events    |
-+------------------------+-----------------------+
-                         |
-          +--------------+--------------+
-          |              |              |
-          v              v              v
-     UART log      JTAG/SWD logs   Board HW logs
-          |              |              |
-          +--------------+--------------+
-                         |
-                         v
-+------------------------------------------------+
-|             Log Collection Layer               |
-|   Raw logs + Structured events + Metadata      |
-+------------------------+-----------------------+
-                         |
-                         v
-+------------------------------------------------+
-|          Storage / Analysis Layer              |
-|    Files / DB / CI artifacts / Reports         |
-+------------------------------------------------+
+The logging system should be separated into four logical layers.
+```{mermaid}
+flowchart TD
+    A["Test Execution Layer<br/>pytest / test cases / fixtures / assertions"]
+    --> B["Automation Layer<br/>Test actions / drivers / framework events"]
+    B --> C["UART Log"]
+    B --> D["JTAG / SWD Logs"]
+    B --> E["Board HW Logs"]
+    C --> F["Log Collection Layer"]
+    D --> F
+    E --> F
+    F --> G["Raw Logs + Structured Events + Metadata"]
+```
+
+
+```{mermaid}
+flowchart TD
+    A["UART Log"] --> D["Log Collection Layer"]
+    B["JTAG / SWD Logs"] --> D
+    C["Board HW Logs"] --> D
+    D --> E["Storage / Analysis Layer"]
+    E --> F["Files / DB / CI Artifacts / Reports"]
 ```
 
 This separation is important because **raw logs and interpreted logs should not be the same thing**.
@@ -268,7 +286,6 @@ Examples:
 
 
 Example:
-->code block<-
 ```text
 10:21:15.120 INFO  TEST_START
 10:21:15.124 INFO  test_id=SOC_UART_001
@@ -287,24 +304,23 @@ Every significant action performed by the automation framework should be logged.
 
 Examples:
 
-Power ON
-Power OFF
-Reset
-Flash firmware
-Open UART
-Close UART
-Send command
-Read response
-Configure peripheral
-Read register
-Write register
-Start measurement
-Stop measurement
-Attach debugger
-Detach debugger
+- Power ON
+- Power OFF
+- Reset
+- Flash firmware
+- Open UART
+- Close UART
+- Send command
+- Read response
+- Configure peripheral
+- Read register
+- Write register
+- Start measurement
+- Stop measurement
+- Attach debugger
+- Detach debugger
 
 Example:
-->code block<-
 ```text
 ACTION
 execution_id=EXE-20260918-001
@@ -332,7 +348,6 @@ baudrate
 ```
 
 Example:
-->code block<-
 ```text
 12:31:02.120 UART0 TX  "status"
 12:31:02.145 UART0 RX  "STATUS: READY"
@@ -341,7 +356,6 @@ Example:
 ### SPI
 
 Example:
-->code block<-
 ```text
 SPI0
 TX: 9F 00 00 00
@@ -351,7 +365,6 @@ RX: EF 40 18 00
 ### I2C
 
 Example:
-->code block<-
 ```text
 I2C0
 ADDR=0x50
@@ -379,7 +392,6 @@ Examples of events:
 Firmware-generated messages should be preserved separately from automation logs.
 
 Example:
-->code block<-
 ```text
 [BOOT] Starting system
 [CLK] PLL configured
@@ -389,7 +401,6 @@ Example:
 ```
 
 The source of the message should be retained:
-->code block<-
 ```text
 source = DUT
 interface = UART0
@@ -403,18 +414,17 @@ Do not simply merge firmware output into the Python log and discard its origin.
 
 If the test infrastructure controls the physical board, capture:
 
-- power supply state;              
-- voltage;                        
-- current;                      
-- temperature;                    
-- reset state;                    
-- relay state;                  
-- board controller messages;    
-- power-cycle events;            
-- external instrumentation.    
+- power supply state;
+- voltage;
+- current;
+- temperature;
+- reset state;
+- relay state;
+- board controller messages;
+- power-cycle events;
+- external instrumentation.
 
 Example:
-->code block<-
 ```text
 BOARD_POWER_ON
 voltage=3.30V
@@ -431,7 +441,6 @@ For long-running tests, this information can be extremely valuable.
 Every execution should capture the environment in which the test was executed.
 
 Example:
-->code block<-
 ```yaml
 execution:
   execution_id: EXE-20260918-001
@@ -468,7 +477,6 @@ tools:
 This information is critical for failure reproduction.
 
 A failure six months later is almost impossible to reproduce if the only information available is:
-->code block<-
 ```text
 test_uart FAILED
 ```
@@ -486,24 +494,23 @@ EXE-20260918-153045-7F32
 ```
 
 Everything generated during that execution should reference it.
-->markdown graph<-
 ```text
 Execution
-   |
-   +-- Test Case 001
-   |    +-- Python log
-   |    +-- UART log
-   |    +-- JTAG log
-   |    +-- screenshots
-   |
-   +-- Test Case 002
-   |    +-- Python log
-   |    +-- UART log
-   |
-   +-- Test Case 003
-        +-- Python log
-        +-- UART log
-        +-- power measurements
+│
+├── Test Case 001
+│   ├── Python log
+│   ├── UART log
+│   ├── JTAG log
+│   └── screenshots
+│
+├── Test Case 002
+│   ├── Python log
+│   └── UART log
+│
+└── Test Case 003
+    ├── Python log
+    ├── UART log
+    └── power measurements
 ```
 
 The Execution ID should remain stable for the entire test run.
@@ -515,7 +522,6 @@ The Execution ID should remain stable for the entire test run.
 Each test should have a stable identifier.
 
 Examples:
-->code block<-
 ```text
 SOC-BOOT-001
 SOC-UART-001
@@ -527,7 +533,6 @@ SOC-PWR-007
 Avoid using the Python function name as the only identifier.
 
 For example:
-->code block<-
 ```python
 def test_uart_command():
     ...
@@ -536,7 +541,6 @@ def test_uart_command():
 can be renamed.
 
 Instead, the test should have a stable logical identifier:
-->code block<-
 ```python
 @pytest.mark.test_id("SOC-UART-001")
 def test_uart_command():
@@ -555,7 +559,6 @@ The canonical machine-readable format should be **JSON Lines (JSONL)**.
 One event should correspond to one JSON object.
 
 Example:
-->code block<-
 ```json
 {
   "timestamp": "2026-09-18T12:31:02.120Z",
@@ -569,7 +572,6 @@ Example:
 ```
 
 Another example:
-->code block<-
 ```json
 {
   "timestamp": "2026-09-18T12:31:05.120Z",
@@ -584,7 +586,6 @@ Another example:
 ```
 
 And:
-->code block<-
 ```json
 {
   "timestamp": "2026-09-18T12:31:05.145Z",
@@ -643,7 +644,6 @@ Log levels should be defined centrally.
 | CRITICAL | Infrastructure/system failure             |
 
 Example:
-->code block<-
 ```text
 INFO     Flashing firmware
 INFO     Firmware flash completed
@@ -663,22 +663,15 @@ For the initial implementation, a filesystem-based artifact structure is suffici
 A centralized logging platform such as Elasticsearch/Kibana should only be introduced if log volume and search requirements justify it.
 
 Recommended architecture:
-->mermaid<-
-```text
-                    CI Runner
-                       |
-                       v
-                Execution directory
-                       |
-       +---------------+----------------+
-       |               |                |
-       v               v                v
-    raw_logs        events           artifacts
-       |               |                |
-       v               v                v
-   UART.log        events.jsonl      firmware.bin
-   JTAG.log        results.json      dump.bin
-   DUT.log                           trace.csv
+```{mermaid}
+flowchart TD
+    A["CI Runner"] --> B["Execution Directory"]
+    B --> C["raw_logs/"]
+    B --> D["events/"]
+    B --> E["artifacts/"]
+    C --> F["UART.log<br/>JTAG.log<br/>DUT.log"]
+    D --> G["events.jsonl<br/>results.json"]
+    E --> H["firmware.bin<br/>dump.bin<br/>trace.csv"]
 ```
 
 All files should be associated with the same Execution ID.
@@ -688,21 +681,12 @@ All files should be associated with the same Execution ID.
 # 12. Long-Term Storage
 
 The storage architecture should distinguish between large artifacts and searchable metadata.
-->mermaid<-
-```text
-                 Execution
-                     |
-                     v   
-          +----------+----------+
-          |                     |
-          v                     v
-   Artifact Storage       Result Storage
-          |                     |
-          |                     |
-          v                     v
-   Raw logs/files         Test results
-   Dumps                   Metadata
-   Measurements            Statistics
+```{mermaid}
+flowchart TD
+    A["Execution"] --> B["Artifact Storage"]
+    A --> C["Result Database"]
+    B --> D["Raw logs / files<br/>Dumps / Measurements"]
+    C --> E["Test results<br/>Metadata / Statistics"]
 ```
 
 ## 12.1 Artifact Storage
@@ -745,7 +729,6 @@ Recommended failure categories:
 
 
 Example regression summary:
-->code block<-
 ```text
 Regression summary
 
@@ -767,28 +750,26 @@ This is significantly more useful than a simple pass/fail count.
 # 14. Failure Analysis Pipeline
 
 The system should contain an automated analysis stage.
-->markdown graph<-
 ```text
 Raw Logs
-   |
-   v
+│
+▼
 Parser
-   |
-   v
+│
+▼
 Failure Detection
-   |
-   +-- Timeout
-   +-- Assertion
-   +-- Boot failure
-   +-- Crash
-   +-- Communication
-   +-- Infrastructure
-          |
-          v
-    Failure Summary
-          |
-          v
-      Test Report
+├── Timeout
+├── Assertion
+├── Boot failure
+├── Crash
+├── Communication
+└── Infrastructure
+│
+▼
+Failure Summary
+│
+▼
+Test Report
 ```
 
 Example failure report:
@@ -833,7 +814,6 @@ Memory dump
 Explicit test steps are recommended for all complex tests.
 
 Example:
-->code block<-
 ```text
 TEST: SOC-UART-001
 
@@ -848,7 +828,6 @@ STEP-007  Power off DUT
 
 A log entry can therefore look like:
 
-->code block<-
 ```json
 {
   "timestamp": "2026-09-18T12:31:05.120Z",
@@ -902,7 +881,6 @@ Long-running SoC tests can generate very large logs.
 Log rotation should therefore be supported.
 
 Example:
-->code block<-
 ```text
 uart.log
 uart.log.001
@@ -935,17 +913,16 @@ The logging system must define what information is permitted in logs.
 
 Potentially sensitive information includes:
 
-- credentials;                 
-- authentication tokens;           
-- private keys;                     
-- production secrets;               
-- customer information;             
-- proprietary information.         
+- credentials;
+- authentication tokens;
+- private keys;
+- production secrets;
+- customer information;
+- proprietary information.
 
 The logger should support masking.
 
 Example:
-->code block<-
 ```text
 username=test_user
 password=********
@@ -961,46 +938,29 @@ Sensitive information should not be written to raw logs unless explicitly requir
 # 19. Recommended Initial Architecture
 
 For a Python/pytest-based SoC automation environment, the recommended initial architecture is:
-->mermaid<-
-```text
-                    pytest
-                      |
-                      v
-               Logging Manager
-                      |
-       +--------------+---------------+
-       |              |               |
-       v              v               v
-Framework events   UART driver    JTAG/SWD
-       |              |               |
-       +--------------+---------------+
-                      |
-                      v
-                Event Collector
+```{mermaid}
+flowchart TD
+    A["pytest"] --> B["Logging Manager"]
+    B --> C["Framework Events"]
+    B --> D["UART Driver"]
+    B --> E["JTAG / SWD"]
+    C --> F["Event Collector"]
+    D --> F
+    E --> F
 ```
 
-->mermaid<-
-```text
-                Event Collector
-                      |
-            +---------+----------+
-            |                    |
-            v                    v
-       Raw log files          JSONL
-            |                    |
-            +---------+----------+
-                      |
-                      v
-                Test Analyzer
-                      |
-            +---------+----------+
-            |         |          |
-            v         v          v
-         JUnit      JSON DB    Quarto
-                      |
-                      v
-                Historical
-                 Analysis
+```{mermaid}
+flowchart TD
+    A["Event Collector"] --> B["Raw Log Files"]
+    A --> C["JSONL"]
+    B --> D["Test Analyzer"]
+    C --> D
+    D --> E["JUnit"]
+    D --> F["JSON DB"]
+    D --> G["Quarto"]
+    E --> H["Historical Analysis"]
+    F --> H
+    G --> H
 ```
 
 ---
@@ -1022,17 +982,16 @@ Raw logs must remain available even after parsing and analysis.
 ## 20.2 Every Event Must Be Traceable
 
 Every event should be traceable to:
-->markdown graph<-
 ```text
 Execution
-   |
-   +-- DUT
-   |
-   +-- Test
-        |
-        +-- Step
-             |
-             +-- Event
+│
+├── DUT
+│
+└── Test
+    │
+    └── Step
+        │
+        └── Event
 ```
 
 ---
