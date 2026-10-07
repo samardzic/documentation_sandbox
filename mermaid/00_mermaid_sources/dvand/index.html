@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dvand Mermaid File Explorer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        /* CSS Custom Properties for Light Theme */
+        :root {
+            --sidebar-bg: #ffffff;
+            --sidebar-header: #f8f9fa;
+            --sidebar-text: #2c3e50;
+            --sidebar-text-muted: #6c757d;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #2c3e50;
+            --text-secondary: #495057;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --border-secondary: #e9ecef;
+            --accent-color: #667eea;
+            --accent-hover: #5a6fd8;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --error-bg: #f8d7da;
+            --error-text: #721c24;
+            --success-bg: #d4edda;
+            --success-text: #155724;
+            --info-bg: #cce8ff;
+            --info-text: #004085;
+        }
+
+        /* CSS Custom Properties for Dark Theme */
+        [data-theme="dark"] {
+            --sidebar-bg: #1e293b;
+            --sidebar-header: #0f172a;
+            --sidebar-text: #f1f5f9;
+            --sidebar-text-muted: #94a3b8;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border-color: #475569;
+            --border-secondary: #374151;
+            --accent-color: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --error-bg: #7f1d1d;
+            --error-text: #fecaca;
+            --success-bg: #14532d;
+            --success-text: #bbf7d0;
+            --info-bg: #1e3a8a;
+            --info-text: #bfdbfe;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            overflow-y: auto;
+            border-right: 1px solid var(--border-secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-header {
+            padding: 1rem;
+            background: var(--sidebar-header);
+            border-bottom: 1px solid var(--border-secondary);
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--sidebar-text);
+            transition: all 0.3s ease;
+        }
+        
+        .file-tree {
+            padding: 0.5rem 0;
+        }
+        
+        .folder {
+            margin-bottom: 0.5rem;
+        }
+        
+        .folder-header {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+            color: var(--sidebar-text);
+        }
+        
+        .folder-header:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .folder-icon {
+            margin-right: 0.5rem;
+            transition: transform 0.2s;
+            font-size: 1rem;
+        }
+        
+        .folder.expanded .folder-icon {
+            transform: rotate(90deg);
+        }
+        
+        .folder-content {
+            display: none;
+            margin-left: 1rem;
+            border-left: 1px solid var(--border-secondary);
+        }
+        
+        .folder.expanded .folder-content {
+            display: block;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--sidebar-text-muted);
+        }
+        
+        .file-item:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .file-item.active {
+            background: var(--accent-color);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .file-item.loading {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .file-icon {
+            margin-right: 0.5rem;
+            color: var(--accent-color);
+            font-size: 1rem;
+        }
+        
+        .file-item:hover .file-icon,
+        .file-item.active .file-icon {
+            color: white;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-secondary);
+            transition: background-color 0.3s ease;
+        }
+        
+        .content-header {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            box-shadow: 0 1px 3px var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .header-info {
+            flex: 1;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+        }
+        
+        .theme-toggle:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .zoom-controls {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .zoom-controls.visible {
+            display: flex;
+        }
+        
+        .zoom-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .zoom-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        
+        .zoom-level {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .content-path {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .diagram-container {
+            flex: 1;
+            padding: 2rem;
+            overflow: hidden;
+            background: var(--bg-tertiary);
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+        
+        .diagram-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            cursor: grab;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: all 0.3s ease;
+        }
+        
+        .diagram-wrapper.panning {
+            cursor: grabbing;
+        }
+        
+        .diagram-content {
+            transform-origin: 0 0;
+            transition: transform 0.2s ease;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 4rem 2rem;
+        }
+        
+        .welcome-message h2 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .mermaid {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px var(--shadow);
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        /* Custom Mermaid Dark Mode Overrides */
+        [data-theme="dark"] .mermaid svg {
+            background: var(--bg-secondary) !important;
+        }
+        
+        [data-theme="dark"] .mermaid .node rect,
+        [data-theme="dark"] .mermaid .node circle,
+        [data-theme="dark"] .mermaid .node ellipse,
+        [data-theme="dark"] .mermaid .node polygon {
+            fill: var(--bg-tertiary) !important;
+            stroke: var(--accent-color) !important;
+            stroke-width: 2px !important;
+        }
+        
+        [data-theme="dark"] .mermaid .node .label,
+        [data-theme="dark"] .mermaid .nodeLabel,
+        [data-theme="dark"] .mermaid text {
+            fill: var(--text-primary) !important;
+            color: var(--text-primary) !important;
+        }
+        
+        [data-theme="dark"] .mermaid .edgePath path,
+        [data-theme="dark"] .mermaid .flowchart-link,
+        [data-theme="dark"] .mermaid .edge-pattern-solid {
+            stroke: var(--accent-color) !important;
+            stroke-width: 2px !important;
+        }
+        
+        [data-theme="dark"] .mermaid .arrowheadPath,
+        [data-theme="dark"] .mermaid .edgePath .arrowhead {
+            fill: var(--accent-color) !important;
+            stroke: var(--accent-color) !important;
+        }
+        
+        [data-theme="dark"] .mermaid .edgeLabel,
+        [data-theme="dark"] .mermaid .edgeLabel rect {
+            fill: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            stroke: var(--border-color) !important;
+        }
+        
+        [data-theme="dark"] .mermaid .cluster rect {
+            fill: var(--bg-primary) !important;
+            stroke: var(--border-color) !important;
+        }
+        
+        /* Enhanced contrast for light mode too */
+        [data-theme="light"] .mermaid .node rect,
+        [data-theme="light"] .mermaid .node circle,
+        [data-theme="light"] .mermaid .node ellipse,
+        [data-theme="light"] .mermaid .node polygon {
+            stroke-width: 2px !important;
+        }
+        
+        [data-theme="light"] .mermaid .edgePath path,
+        [data-theme="light"] .mermaid .flowchart-link {
+            stroke-width: 2px !important;
+        }
+        
+        .error-message {
+            background: var(--error-bg);
+            color: var(--error-text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-message {
+            background: var(--info-bg);
+            color: var(--info-text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .info-message {
+            background: var(--success-bg);
+            color: var(--success-text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+            }
+            
+            .diagram-container {
+                padding: 1rem;
+            }
+            
+            .content-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .header-controls {
+                align-self: stretch;
+                justify-content: space-between;
+            }
+            
+            .zoom-controls {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .theme-toggle {
+                width: 44px;
+                height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            📁 Dvand Mermaid Files
+        </div>
+        <div class="file-tree">
+            <div class="file-item" data-file="dvand_complete_ecosystem_flow.md">
+                <span class="file-icon">🌟</span>
+                <span>dvand_complete_ecosystem_flow.md</span>
+            </div>
+            
+            <div class="folder expanded">
+                <div class="folder-header">
+                    <span class="folder-icon">▶</span>
+                    <span>📁 Non Logged in User</span>
+                </div>
+                <div class="folder-content">
+                    <div class="file-item" data-file="Non Logged in User/dvand-non-logged-in-user-conversion-funnel.md">
+                        <span class="file-icon">🎯</span>
+                        <span>dvand-non-logged-in-user-conversion-funnel.md</span>
+                    </div>
+                    <div class="file-item" data-file="Non Logged in User/dvand-non-logged-in-user-overall-flow.md">
+                        <span class="file-icon">🌊</span>
+                        <span>dvand-non-logged-in-user-overall-flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Non Logged in User/dvand-non-logged-in-user-voting-mechanism.md">
+                        <span class="file-icon">⚡</span>
+                        <span>dvand-non-logged-in-user-voting-mechanism.md</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder expanded">
+                <div class="folder-header">
+                    <span class="folder-icon">▶</span>
+                    <span>📁 Logged in User</span>
+                </div>
+                <div class="folder-content">
+                    <div class="file-item" data-file="Logged in User/dvand_logged_in_user_complete_flow.md">
+                        <span class="file-icon">🔄</span>
+                        <span>dvand_logged_in_user_complete_flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Logged in User/dvand_logged_in_user_creator_following.md">
+                        <span class="file-icon">👥</span>
+                        <span>dvand_logged_in_user_creator_following.md</span>
+                    </div>
+                    <div class="file-item" data-file="Logged in User/dvand_logged_in_user_daily_engagement_cycle.md">
+                        <span class="file-icon">📱</span>
+                        <span>dvand_logged_in_user_daily_engagement_cycle.md</span>
+                    </div>
+                    <div class="file-item" data-file="Logged in User/dvand_logged_in_user_notification_strategy.md">
+                        <span class="file-icon">🔔</span>
+                        <span>dvand_logged_in_user_notification_strategy.md</span>
+                    </div>
+                    <div class="file-item" data-file="Logged in User/dvand_logged_in_user_onboarding.md">
+                        <span class="file-icon">🚀</span>
+                        <span>dvand_logged_in_user_onboarding.md</span>
+                    </div>
+                    <div class="file-item" data-file="Logged in User/dvand_logged_in_user_voting_system.md">
+                        <span class="file-icon">🗳️</span>
+                        <span>dvand_logged_in_user_voting_system.md</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder expanded">
+                <div class="folder-header">
+                    <span class="folder-icon">▶</span>
+                    <span>📁 Content Creator</span>
+                </div>
+                <div class="folder-content">
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_content-creator-complete-flow.md">
+                        <span class="file-icon">🚀</span>
+                        <span>dvand_content_creator_user_content-creator-complete.md</span>
+                    </div>
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_content-moderation-workflow.md">
+                        <span class="file-icon">✅</span>
+                        <span>dvand_content_creator_user_content-moderation-workflow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_creator-analytics-performance-flow.md">
+                        <span class="file-icon">📊</span>
+                        <span>dvand_content_creator_user_creator-analytics-performance.md</span>
+                    </div>
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_creator-upload-moderation-flow.md">
+                        <span class="file-icon">📤</span>
+                        <span>dvand_content_creator_user_creator-upload-moderation.md</span>
+                    </div>
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_draft-management-system-flow.md">
+                        <span class="file-icon">📝</span>
+                        <span>dvand_content_creator_user_draft-management-system.md</span>
+                    </div>
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_kyc-verification-flow.md">
+                        <span class="file-icon">🆔</span>
+                        <span>dvand_content_creator_user_kyc-verification-flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Content Creator/dvand_content_creator_user_prize-winner-journey-flow.md">
+                        <span class="file-icon">🏆</span>
+                        <span>dvand_content_creator_user_prize-winner-journey-flow.md</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="folder expanded">
+                <div class="folder-header">
+                    <span class="folder-icon">▶</span>
+                    <span>📁 Admin</span>
+                </div>
+                <div class="folder-content">
+                    <div class="file-item" data-file="Admin/dvand_admin_challenge_management_flow.md">
+                        <span class="file-icon">📊</span>
+                        <span>dvand_admin_challenge_management_flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Admin/dvand_admin_content_moderation_flow.md">
+                        <span class="file-icon">🎬</span>
+                        <span>dvand_admin_content_moderation_flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Admin/dvand_admin_cross_user_integration_flow.md">
+                        <span class="file-icon">🔗</span>
+                        <span>dvand_admin_cross_user_integration_flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Admin/dvand_admin_kyc_payment_flow.md">
+                        <span class="file-icon">💳</span>
+                        <span>dvand_admin_kyc_payment_flow.md</span>
+                    </div>
+                    <div class="file-item" data-file="Admin/dvand_admin_platform_monitoring_flow.md">
+                        <span class="file-icon">📈</span>
+                        <span>dvand_admin_platform_monitoring_flow.md</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <div class="header-info">
+                <div class="content-title" id="content-title">Dvand Platform Documentation</div>
+                <div class="content-path" id="content-path">Select a file to view the diagram</div>
+            </div>
+            <div class="header-controls">
+                <button class="theme-toggle" id="theme-toggle" title="Toggle Dark Mode">
+                    🌙
+                </button>
+                <div class="zoom-controls" id="zoom-controls">
+                    <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+                    <div class="zoom-level" id="zoom-level">100%</div>
+                    <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+                    <button class="zoom-btn" id="zoom-reset" title="Reset Zoom">⌂</button>
+                    <button class="zoom-btn" id="zoom-fit" title="Fit to Screen">⊞</button>
+                </div>
+            </div>
+        </div>
+        <div class="diagram-container" id="diagram-container">
+            <div class="welcome-message">
+                <h2>🎯 Welcome to Dvand Documentation</h2>
+                <p>Click on any .md file in the sidebar to automatically load and render its Mermaid diagram.</p>
+                <p><strong>✨ Fixed!</strong> Proper URL encoding for folder names with spaces!</p>
+                <div class="info-message">
+                    <h3>🎨 Theme & Controls:</h3>
+                    <p><strong>Dark Mode:</strong> Click the moon/sun icon in the top-right corner</p>
+                    <p><strong>Mouse:</strong> Scroll wheel to zoom, drag to pan</p>
+                    <p><strong>Keyboard:</strong> Ctrl/Cmd + Plus/Minus to zoom, Ctrl/Cmd + 0 to reset</p>
+                    <p><strong>Buttons:</strong> Use the zoom controls that appear when viewing diagrams</p>
+                    <p><strong>Touch:</strong> Pinch to zoom, drag to pan (mobile devices)</p>
+                </div>
+                <div class="info-message">
+                    <h3>📁 Setup Instructions:</h3>
+                    <p><strong>For local testing:</strong> Run a local server (e.g., <code>python -m http.server</code> or VS Code Live Server)</p>
+                    <p><strong>For GitHub Pages:</strong> Upload this HTML file with your folder structure intact</p>
+                    <p><strong>Expected structure:</strong></p>
+                    <pre style="font-size: 0.8rem; margin-top: 0.5rem;">your-repo/
+├── index.html (this file)
+├── Admin/
+│   ├── dvand_admin_challenge_management_flow.md
+│   └── ... (other admin files)
+├── Content Creator/
+│   ├── dvand_content_creator_user_content-creator-complete.md
+│   └── ... (other creator files)
+├── Logged in User/
+│   └── ... (logged user files)
+├── Non Logged in User/
+│   └── ... (non-logged user files)
+└── dvand_complete_ecosystem_flow.md</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme management
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // Initialize theme
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPreference = prefersDarkScheme.matches ? 'dark' : 'light';
+            const theme = savedTheme || systemPreference;
+            
+            setTheme(theme);
+        }
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            themeToggle.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+            localStorage.setItem('theme', theme);
+            
+            // Reinitialize Mermaid with new theme
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: theme === 'dark' ? 'dark' : 'default',
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'basis'
+                }
+            });
+        }
+        
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+            
+            // If a diagram is currently shown, re-render it with the new theme
+            const currentMermaid = document.querySelector('.mermaid');
+            if (currentMermaid && currentMermaid.id) {
+                // Store the original mermaid content
+                const originalContent = currentMermaid.getAttribute('data-original-content') || currentMermaid.textContent;
+                currentMermaid.setAttribute('data-original-content', originalContent);
+                
+                // Clear the rendered content and restore original
+                currentMermaid.innerHTML = originalContent;
+                currentMermaid.removeAttribute('data-processed');
+                
+                // Re-render with new theme
+                mermaid.run({ querySelector: `#${currentMermaid.id}` });
+            }
+        }
+        
+        // Initialize theme on load
+        initializeTheme();
+        
+        // Theme toggle event
+        themeToggle.addEventListener('click', toggleTheme);
+        
+        // Listen for system theme changes
+        prefersDarkScheme.addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        // Zoom and Pan variables
+        let currentZoom = 1;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let currentTranslate = { x: 0, y: 0 };
+        let diagramWrapper = null;
+        let diagramContent = null;
+
+        // Folder toggle functionality
+        document.querySelectorAll('.folder-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const folder = header.parentElement;
+                folder.classList.toggle('expanded');
+            });
+        });
+
+        // File selection functionality
+        document.querySelectorAll('.file-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                // Remove active class from all items
+                document.querySelectorAll('.file-item').forEach(i => {
+                    i.classList.remove('active', 'loading');
+                });
+                
+                // Add loading class to clicked item
+                item.classList.add('loading');
+                
+                // Get file info
+                const fileName = item.dataset.file;
+                const displayName = fileName.replace('.md', '');
+                
+                // Update header
+                document.getElementById('content-title').textContent = displayName;
+                document.getElementById('content-path').textContent = `mermaid/${fileName}`;
+                
+                // Load and render diagram
+                await loadAndRenderDiagram(fileName);
+                
+                // Remove loading and add active class
+                item.classList.remove('loading');
+                item.classList.add('active');
+            });
+        });
+
+        async function loadAndRenderDiagram(fileName) {
+            const container = document.getElementById('diagram-container');
+            
+            // Hide zoom controls initially
+            document.getElementById('zoom-controls').classList.remove('visible');
+            
+            // Show loading message
+            container.innerHTML = `
+                <div class="loading-message">
+                    <div class="loading-spinner"></div>
+                    <h3>Loading ${fileName}...</h3>
+                    <p>Fetching and rendering diagram...</p>
+                </div>
+            `;
+            
+            try {
+                // Properly encode the file path to handle spaces and special characters
+                const encodedFileName = encodeURIComponent(fileName).replace(/%2F/g, '/');
+                
+                // Try to fetch the .md file
+                const response = await fetch(encodedFileName);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const fileContent = await response.text();
+                
+                // Extract Mermaid content from markdown
+                const mermaidContent = extractMermaidFromMarkdown(fileContent);
+                
+                if (!mermaidContent) {
+                    throw new Error('No Mermaid diagram found in file');
+                }
+                
+                // Create unique ID for this diagram
+                const diagramId = `diagram-${Date.now()}`;
+                
+                container.innerHTML = `
+                    <div class="diagram-wrapper" id="diagram-wrapper">
+                        <div class="diagram-content" id="diagram-content">
+                            <div class="mermaid" id="${diagramId}" data-original-content="${mermaidContent.replace(/"/g, '&quot;')}">
+                                ${mermaidContent}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Setup zoom and pan
+                setupZoomAndPan();
+                
+                // Render the mermaid diagram
+                await mermaid.run({
+                    querySelector: `#${diagramId}`
+                });
+                
+                // Show zoom controls
+                document.getElementById('zoom-controls').classList.add('visible');
+                
+                // Reset zoom
+                resetZoom();
+                
+            } catch (error) {
+                console.error('Error loading file:', error);
+                
+                let errorMessage = 'Unknown error occurred';
+                let suggestion = '';
+                
+                if (error.message.includes('HTTP 404') || error.message.includes('Not Found')) {
+                    errorMessage = 'File not found';
+                    suggestion = 'Make sure the .md file is in the same directory as this HTML file with the exact folder structure.';
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                    errorMessage = 'Cannot access local files directly';
+                    suggestion = 'Run a local server (e.g., <code>python -m http.server 8000</code>) or use VS Code Live Server extension.';
+                } else if (error.message.includes('No Mermaid diagram')) {
+                    errorMessage = 'No Mermaid diagram found in file';
+                    suggestion = 'Make sure your .md file contains a Mermaid diagram wrapped in ```mermaid code blocks.';
+                }
+                
+                container.innerHTML = `
+                    <div class="error-message">
+                        <h3>❌ Error loading ${fileName}</h3>
+                        <p><strong>Error:</strong> ${errorMessage}</p>
+                        <p><strong>Suggestion:</strong> ${suggestion}</p>
+                        <p><strong>Debug Info:</strong> Tried to fetch: <code>${encodeURIComponent(fileName).replace(/%2F/g, '/')}</code></p>
+                        <details style="margin-top: 1rem;">
+                            <summary>Technical Details</summary>
+                            <pre style="margin-top: 0.5rem; font-size: 0.8rem;">${error.message}</pre>
+                        </details>
+                    </div>
+                `;
+            }
+        }
+
+        function extractMermaidFromMarkdown(content) {
+            // Look for mermaid code blocks
+            const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n```/i;
+            const match = content.match(mermaidRegex);
+            
+            if (match && match[1]) {
+                return match[1].trim();
+            }
+            
+            // If no code block found, assume the entire content is mermaid
+            // (in case the .md file contains only mermaid syntax)
+            const lines = content.split('\n');
+            const nonEmptyLines = lines.filter(line => line.trim());
+            
+            // Check if it looks like mermaid syntax
+            if (nonEmptyLines.some(line => 
+                line.includes('flowchart') || 
+                line.includes('graph') || 
+                line.includes('-->') ||
+                line.includes('--->')
+            )) {
+                return content.trim();
+            }
+            
+            return null;
+        }
+
+        function setupZoomAndPan() {
+            diagramWrapper = document.getElementById('diagram-wrapper');
+            diagramContent = document.getElementById('diagram-content');
+            
+            if (!diagramWrapper || !diagramContent) return;
+            
+            // Reset zoom state
+            currentZoom = 1;
+            currentTranslate = { x: 0, y: 0 };
+            
+            // Mouse wheel zoom
+            diagramWrapper.addEventListener('wheel', handleWheel, { passive: false });
+            
+            // Mouse drag pan
+            diagramWrapper.addEventListener('mousedown', handleMouseDown);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            
+            // Touch events for mobile
+            diagramWrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
+            diagramWrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
+            diagramWrapper.addEventListener('touchend', handleTouchEnd);
+            
+            // Zoom button events
+            document.getElementById('zoom-in').addEventListener('click', () => zoomBy(1.2));
+            document.getElementById('zoom-out').addEventListener('click', () => zoomBy(0.8));
+            document.getElementById('zoom-reset').addEventListener('click', resetZoom);
+            document.getElementById('zoom-fit').addEventListener('click', fitToScreen);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeydown);
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const rect = diagramWrapper.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            zoomAt(delta, mouseX, mouseY);
+        }
+
+        function handleMouseDown(e) {
+            isDragging = true;
+            dragStart.x = e.clientX - currentTranslate.x;
+            dragStart.y = e.clientY - currentTranslate.y;
+            diagramWrapper.classList.add('panning');
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            currentTranslate.x = e.clientX - dragStart.x;
+            currentTranslate.y = e.clientY - dragStart.y;
+            updateTransform();
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            diagramWrapper?.classList.remove('panning');
+        }
+
+        function handleTouchStart(e) {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                const touch = e.touches[0];
+                dragStart.x = touch.clientX - currentTranslate.x;
+                dragStart.y = touch.clientY - currentTranslate.y;
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (!isDragging || e.touches.length !== 1) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            currentTranslate.x = touch.clientX - dragStart.x;
+            currentTranslate.y = touch.clientY - dragStart.y;
+            updateTransform();
+        }
+
+        function handleTouchEnd() {
+            isDragging = false;
+        }
+
+        function handleKeydown(e) {
+            if (!diagramContent) return;
+            
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '=':
+                    case '+':
+                        e.preventDefault();
+                        zoomBy(1.2);
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomBy(0.8);
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        resetZoom();
+                        break;
+                }
+            }
+        }
+
+        function zoomBy(factor) {
+            const rect = diagramWrapper.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            zoomAt(factor, centerX, centerY);
+        }
+
+        function zoomAt(factor, mouseX, mouseY) {
+            const newZoom = Math.max(0.1, Math.min(5, currentZoom * factor));
+            
+            if (newZoom !== currentZoom) {
+                const zoomRatio = newZoom / currentZoom;
+                
+                currentTranslate.x = mouseX - (mouseX - currentTranslate.x) * zoomRatio;
+                currentTranslate.y = mouseY - (mouseY - currentTranslate.y) * zoomRatio;
+                
+                currentZoom = newZoom;
+                updateTransform();
+                updateZoomLevel();
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            currentTranslate = { x: 0, y: 0 };
+            updateTransform();
+            updateZoomLevel();
+        }
+
+        function fitToScreen() {
+            if (!diagramContent) return;
+            
+            const wrapper = diagramWrapper.getBoundingClientRect();
+            const content = diagramContent.querySelector('.mermaid');
+            
+            if (content) {
+                const contentRect = content.getBoundingClientRect();
+                const scaleX = (wrapper.width - 40) / contentRect.width;
+                const scaleY = (wrapper.height - 40) / contentRect.height;
+                const scale = Math.min(scaleX, scaleY, 1);
+                
+                currentZoom = scale;
+                currentTranslate.x = (wrapper.width - contentRect.width * scale) / 2;
+                currentTranslate.y = (wrapper.height - contentRect.height * scale) / 2;
+                
+                updateTransform();
+                updateZoomLevel();
+            }
+        }
+
+        function updateTransform() {
+            if (diagramContent) {
+                diagramContent.style.transform = 
+                    `translate(${currentTranslate.x}px, ${currentTranslate.y}px) scale(${currentZoom})`;
+            }
+        }
+
+        function updateZoomLevel() {
+            const zoomLevel = document.getElementById('zoom-level');
+            if (zoomLevel) {
+                zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+            }
+        }
+    </script>
+</body>
+</html>

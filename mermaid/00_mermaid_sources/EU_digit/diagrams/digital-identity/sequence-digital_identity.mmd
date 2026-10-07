@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant EUUser
+    participant EUWallet
+    participant eIDAS
+    participant ServiceProvider
+    participant PublicAdmin
+    participant CrossBorderSystem
+
+    Note over EUUser,CrossBorderSystem: Scenario: EU citizen/business uses Digital Identity Wallet.
+    EUUser->>EUWallet: Log In
+    EUWallet->>eIDAS: Verify Identity (e.g., via national eID)
+    eIDAS-->>EUWallet: Identity Verification Result
+    EUUser->>EUWallet: Request Service Access
+    EUWallet->>ServiceProvider: Grant Access (e.g., to Banks/Public Services)
+    EUUser->>EUWallet: Store & Share Credentials
+    EUWallet->>VerifiedStorage: Store Verified Credentials
+    PublicAdmin->>EUWallet: Request Identity Validation
+    EUWallet-->>PublicAdmin: Validate Identity (e.g., for permits)
+    CrossBorderSystem->>EUWallet: Request Interoperability Check
+    EUWallet-->>CrossBorderSystem: Confirm Interoperability (e.g., across member states)

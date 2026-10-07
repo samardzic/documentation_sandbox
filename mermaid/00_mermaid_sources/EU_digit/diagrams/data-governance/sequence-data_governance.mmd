@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant DataOwner
+    participant DataGovernanceFramework
+    participant GDPR
+    participant PublicAdministrations
+    participant CrossBorderSystem
+
+    Note over DataOwner,CrossBorderSystem: Scenario: Data sharing and compliance under EU governance rules.
+    DataOwner->>DataGovernanceFramework: Share Data
+    DataGovernanceFramework->>GDPR: Check Compliance (e.g., privacy, consent)
+    GDPR-->>DataGovernanceFramework: Compliance Status
+    DataGovernanceFramework->>DataGovernanceFramework: Apply Data Governance Rules (e.g., DGA)
+    DataGovernanceFramework->>SecureStorage: Store Data (Encrypted/Auditable)
+    SecureStorage-->>DataGovernanceFramework: Confirm Secure Storage
+    PublicAdministrations->>DataGovernanceFramework: Request Access & Validation
+    DataGovernanceFramework-->>PublicAdministrations: Grant/Reject Access
+    CrossBorderSystem->>DataGovernanceFramework: Verify Cross-Border Compliance
+    DataGovernanceFramework-->>CrossBorderSystem: Compliance Certificate

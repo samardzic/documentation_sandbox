@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Business
+    participant AIComplianceAgent
+    participant GDPR
+    participant DGA
+    participant ComplianceStatus
+    participant PublicAdministrations
+
+    Note over Business,PublicAdministrations: Scenario: A business submits data for compliance checks.
+    Business->>AIComplianceAgent: Submit Data
+    AIComplianceAgent->>GDPR: Check Compliance
+    GDPR-->>AIComplianceAgent: Compliance Result
+    AIComplianceAgent->>DGA: Check Compliance
+    DGA-->>AIComplianceAgent: Compliance Result
+    AIComplianceAgent->>ComplianceStatus: Approve/Reject
+    PublicAdministrations->>AIComplianceAgent: Monitor Compliance
+    AIComplianceAgent-->>PublicAdministrations: Compliance Report

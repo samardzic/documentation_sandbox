@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Business
+    participant EUBusinessWallet
+    participant PublicAdmin
+    participant CrossBorderSystem
+
+    Note over Business,CrossBorderSystem: Scenario: Business uses European Business Wallet for secure operations.
+    Business->>EUBusinessWallet: Identify & Authenticate
+    EUBusinessWallet->>Business: Provide Secure Digital Identity (Unique ID)
+    Business->>EUBusinessWallet: Sign/Seal Documents
+    EUBusinessWallet->>Business: Apply Digital Signatures/Timestamps
+    Business->>EUBusinessWallet: Store Verified Documents
+    EUBusinessWallet->>Business: Confirm Data Storage
+    Business->>EUBusinessWallet: Communicate Securely (e.g., with Customers/Suppliers)
+    EUBusinessWallet->>PublicAdmin: Validate & Grant Access to Data
+    CrossBorderSystem->>EUBusinessWallet: Simplify Compliance (e.g., cross-border rules)
+    EUBusinessWallet->>Business: Reduce Administrative Burden (for SMEs)
+    EUBusinessWallet->>Business: Enable Single Market Scalability

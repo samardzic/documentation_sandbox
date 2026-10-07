@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant State1
+    participant State2
+    participant InteropFramework
+    participant CrossBorderServices
+    participant PublicAdmin
+
+    Note over State1,PublicAdmin: Scenario: Cross-border data sharing and service access.
+    State1->>InteropFramework: Share Data (e.g., business records)
+    State1->>InteropFramework: Request Access to Services
+    State2->>InteropFramework: Share Data (e.g., citizen records)
+    State2->>InteropFramework: Request Access to Services
+    InteropFramework->>CrossBorderServices: Standardize Data Formats
+    InteropFramework->>CrossBorderServices: Validate Compliance (e.g., DGA, eIDAS)
+    CrossBorderServices->>InteropFramework: Confirm Interoperability
+    PublicAdmin->>InteropFramework: Request Data Validation
+    InteropFramework-->>PublicAdmin: Provide Validated Data
+    InteropFramework->>State1: Grant Service Access
+    InteropFramework->>State2: Grant Service Access
